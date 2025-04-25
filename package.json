@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
+    "postinstall": "chmod +x node_modules/.bin/next",
     "build": "next build",
     "start": "next start"
   },
