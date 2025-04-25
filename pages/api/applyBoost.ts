@@ -4,6 +4,7 @@ const boostMap = {
   referral: 50,
   social: 100,
   streak: 50,
+  ad: 100 
 };
 
 export default async function handler(req, res) {
