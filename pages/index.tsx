@@ -1,70 +1,223 @@
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, getDocs } from "firebase/firestore";
 
 export default function Home() {
-  const [energy, setEnergy] = useState<number>(400);
-  const [shrockEarned, setShrockEarned] = useState<number>(0);
-  const [dailyPool, setDailyPool] = useState<number>(0);
+  const [energy, setEnergy] = useState(400);
+  const [shrockEarned, setShrockEarned] = useState(0);
+  const [lastLoginDate, setLastLoginDate] = useState<string>("");
+  const [countdown, setCountdown] = useState<string>("");
+  const [tasks, setTasks] = useState<any[]>([]);
 
-  // Fetch Daily Pool from API
+  const userId =
+    typeof window !== "undefined" &&
+    (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id
+      ? (window as any).Telegram.WebApp.initDataUnsafe.user.id.toString()
+      : "guestUser";
+
+  const presaleDate = new Date("2025-05-20T00:00:00Z");
+
   useEffect(() => {
-    const fetchPool = async () => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const distance = presaleDate.getTime() - now.getTime();
+
+      if (distance <= 0) {
+        setCountdown("Presale is live!");
+        clearInterval(interval);
+      } else {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((distance / (1000 * 60)) % 60);
+        const seconds = Math.floor((distance / 1000) % 60);
+
+        setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load social tasks from Firebase
+  useEffect(() => {
+    const fetchTasks = async () => {
       try {
-        const response = await fetch("/api/pool");
-        const data = await response.json();
-        setDailyPool(data.dailyPool || 0);
+        const querySnapshot = await getDocs(collection(db, "tasks"));
+        const tasksData: any[] = [];
+        querySnapshot.forEach((doc) => {
+          tasksData.push(doc.data());
+        });
+        setTasks(tasksData);
       } catch (error) {
-        console.error("Error fetching pool:", error);
+        console.error("Error fetching tasks:", error);
       }
     };
 
-    fetchPool();
+    fetchTasks();
   }, []);
 
-  const handleTap = async () => {
+  const handleTap = () => {
     if (energy > 0) {
-      setEnergy((prev) => prev - 1);
-      setShrockEarned((prev) => prev + 5);
+      const newEnergy = energy - 1;
+      const newShrockEarned = shrockEarned + 5;
 
-      // Save user data to Firestore
-      try {
-        const userId = "exampleUserId"; // Replace with real user ID if you have auth later
-        const userRef = doc(db, "users", userId);
-        await setDoc(userRef, {
-          energy: energy - 1,
-          shrockEarned: shrockEarned + 5,
-          updatedAt: new Date(),
-        }, { merge: true });
-      } catch (error) {
-        console.error("Error saving tap data:", error);
-      }
+      setEnergy(newEnergy);
+      setShrockEarned(newShrockEarned);
+
+      saveUserData(userId, {
+        energy: newEnergy,
+        shrockEarned: newShrockEarned,
+      });
+    }
+  };
+
+  const handleWatchAd = () => {
+    const newEnergy = Math.min(energy + 100, 500);
+    setEnergy(newEnergy);
+
+    saveUserData(userId, {
+      energy: newEnergy,
+      shrockEarned: shrockEarned,
+    });
+  };
+
+  const handleDailyLogin = () => {
+    const today = new Date().toISOString().split("T")[0];
+    if (lastLoginDate !== today) {
+      setLastLoginDate(today);
+      const newShrockEarned = shrockEarned + 50;
+      setShrockEarned(newShrockEarned);
+
+      saveUserData(userId, {
+        energy: energy,
+        shrockEarned: newShrockEarned,
+        lastLoginDate: today,
+      });
+
+      alert("You received your Daily Login Reward: 50 $SHROCK!");
+    } else {
+      alert("You already claimed today's reward!");
+    }
+  };
+
+  const handleClaim = () => {
+    alert("Wallet connection coming soon! Claim will be live after presale!");
+  };
+
+  const handleSocialTask = (task: any) => {
+    window.open(task.url, "_blank");
+    const newEnergy = Math.min(energy + task.reward, 500);
+    setEnergy(newEnergy);
+
+    saveUserData(userId, {
+      energy: newEnergy,
+      shrockEarned: shrockEarned,
+    });
+
+    alert(`+${task.reward} Energy added for completing "${task.title}"`);
+  };
+
+  const saveUserData = async (userId: string, data: any) => {
+    try {
+      await setDoc(doc(db, "users", userId), data);
+      console.log("User data saved successfully!");
+    } catch (error) {
+      console.error("Error saving user data:", error);
     }
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>ShibaRocket Mini App</h1>
-      <h2>Energy: {energy}</h2>
-      <h2>Earned: {shrockEarned} $SHROCK</h2>
-      <h3>Daily Pool: {dailyPool.toLocaleString()} $SHROCK</h3>
+    <div style={{ 
+      textAlign: "center", 
+      marginTop: "30px", 
+      fontFamily: "Arial, sans-serif", 
+      backgroundColor: "#f5f7fa",
+      minHeight: "100vh",
+      padding: "20px"
+    }}>
+      <h1 style={{ fontSize: "32px", color: "#ff5733" }}>
+        ShibaRocket Mini App
+      </h1>
 
-      <button
-        onClick={handleTap}
-        style={{
-          marginTop: "20px",
-          padding: "20px 40px",
-          fontSize: "24px",
-          backgroundColor: "#ff4d4d",
-          color: "white",
-          border: "none",
-          borderRadius: "12px",
-          cursor: "pointer",
-        }}
-      >
-        Tap to Earn
-      </button>
+      <div style={{ margin: "20px", fontSize: "20px", color: "#333" }}>
+        <strong>Presale Countdown:</strong> {countdown}
+        <div style={{ fontSize: "16px", color: "#777", marginTop: "5px" }}>
+          Get ready for the $SHROCK Presale!
+        </div>
+      </div>
+
+      <h2 style={{ fontSize: "24px", color: "#2c3e50" }}>
+        Energy: {energy}
+      </h2>
+      <h2 style={{ fontSize: "24px", color: "#2c3e50" }}>
+        Earned: {shrockEarned} $SHROCK
+      </h2>
+
+      <div style={{ marginTop: "30px" }}>
+        <button 
+          onClick={handleTap} 
+          style={{
+            fontSize: "24px",
+            padding: "12px 32px",
+            margin: "10px",
+            backgroundColor: "#28a745",
+            color: "#fff",
+            border: "none",
+            borderRadius: "8px"
+          }}
+        >
+          TAP
+        </button>
+      </div>
+
+      <div style={{ marginTop: "20px" }}>
+        <button 
+          onClick={handleWatchAd}
+          style={buttonStyle("#007bff")}
+        >
+          Watch Ad for +100 Energy
+        </button>
+
+        <button 
+          onClick={handleDailyLogin}
+          style={buttonStyle("#ffc107", "#000")}
+        >
+          Daily Login Reward
+        </button>
+
+        <button 
+          onClick={handleClaim}
+          style={buttonStyle("#6f42c1")}
+        >
+          Claim $SHROCK
+        </button>
+      </div>
+
+      {/* Dynamic Social Tasks */}
+      <div style={{ marginTop: "40px" }}>
+        <h3 style={{ marginBottom: "10px", color: "#2c3e50" }}>Complete Social Tasks:</h3>
+        {tasks.map((task, index) => (
+          <button
+            key={index}
+            onClick={() => handleSocialTask(task)}
+            style={buttonStyle("#17a2b8")}
+          >
+            {task.title} (+{task.reward} Energy)
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
+
+// Custom button style
+const buttonStyle = (backgroundColor: string, color = "#fff") => ({
+  fontSize: "18px",
+  padding: "10px 20px",
+  margin: "8px",
+  backgroundColor,
+  color,
+  border: "none",
+  borderRadius: "6px",
+});
 
