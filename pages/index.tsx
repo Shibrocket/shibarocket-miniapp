@@ -1,3 +1,8 @@
 export default function Home() {
-  return <h1>ShibaRocket Mini App is Live!</h1>;
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>ShibaRocket Mini App is Live!</h1>
+    </div>
+  );
 }
+
