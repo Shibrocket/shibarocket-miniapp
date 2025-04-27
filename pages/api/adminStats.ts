@@ -2,34 +2,27 @@
 
 import { NextApiRequest, NextApiResponse } from "next";
 import { getFirestore } from "firebase-admin/firestore";
-import { initializeApp, applicationDefault, cert, getApps } from "firebase-admin/app";
+import { adminApp } from "../../utils/firebaseAdmin"; // This imports your firebaseAdmin config
 
-// Initialize Firebase Admin
-if (!getApps().length) {
-  initializeApp({
-    credential: applicationDefault(),
-  });
-}
-
-const db = getFirestore();
+const db = getFirestore(adminApp);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const dailyPoolDoc = await db.collection('dailyPool').doc('dailyPool').get();
-    
-    if (!dailyPoolDoc.exists) {
-      return res.status(404).json({ error: "Daily pool not found" });
+    const dailyPoolRef = db.collection("dailyPool").doc("dailyPool");
+    const dailyPoolSnap = await dailyPoolRef.get();
+
+    if (!dailyPoolSnap.exists) {
+      return res.status(404).json({ error: "dailyPool document not found." });
     }
 
-    const dailyPoolData = dailyPoolDoc.data();
+    const poolData = dailyPoolSnap.data();
 
     return res.status(200).json({
       success: true,
-      data: dailyPoolData,
+      data: poolData,
     });
-
   } catch (error) {
     console.error("Error fetching admin stats:", error);
-    return res.status(500).json({ success: false, error: "Server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
