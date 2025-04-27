@@ -13,4 +13,4 @@ export function initFirebaseAdmin() {
   }
 }
 
-export const db = getFirestore();
+
