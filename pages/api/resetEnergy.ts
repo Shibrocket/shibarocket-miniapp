@@ -1,22 +1,28 @@
-import { initFirebaseAdmin, db } from '../../utils/firebaseAdmin';
+import { db } from "../../utils/firebaseAdmin";
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") return res.status(405).end();
+  if (req.method !== "GET") {
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
 
-  await initFirebaseAdmin();
-  const usersRef = db.collection("users");
-  const snapshot = await usersRef.get();
+  try {
+    // Get all users from Firestore
+    const usersSnapshot = await db.collection("users").get();
 
-  const batch = db.batch();
-  snapshot.forEach(doc => {
-    batch.update(doc.ref, {
-      energy: 400,
-      tapsToday: 0,
-      boostEnergy: 0,
-      lastEnergyReset: new Date().toISOString()
+    // Create a batch write
+    const batch = db.batch();
+
+    usersSnapshot.forEach((userDoc) => {
+      // Update each user's energy back to 400
+      batch.update(userDoc.ref, { energy: 400 });
     });
-  });
 
-  await batch.commit();
-  return res.status(200).json({ message: "Energy reset complete" });
+    // Commit the batch
+    await batch.commit();
+
+    res.status(200).json({ message: "Energy reset successfully for all users." });
+  } catch (error) {
+    console.error("Error resetting energy:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 }
