@@ -1,4 +1,4 @@
-import { initFirebaseAdmin, db } from '../../utils/firebaseAdmin';
+import { db } from '../../utils/firebaseAdmin';
 
 const boostMap = {
   referral: 50,
