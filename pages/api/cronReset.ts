@@ -1,27 +1,49 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getFirestore, doc, getDoc, setDoc } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
+import { initFirebaseAdmin } from "../../utils/firebaseAdmin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    await initFirebaseAdmin();
     const db = getFirestore();
 
-    const poolRef = doc(db, "dailyPool", "dailyPool");
-    const poolSnap = await getDoc(poolRef);
+    const poolDoc = db.doc("pools/main");
+    const poolSnap = await poolDoc.get();
 
-    if (!poolSnap.exists()) {
-      return res.status(404).json({ message: "dailyPool not found" });
+    if (!poolSnap.exists) {
+      return res.status(404).json({ error: "Pool document not found" });
     }
 
-    const data = poolSnap.data();
+    const poolData = poolSnap.data();
 
-    const {
-      tappingPool = 0,
-      socialTaskPool = 0,
-      referralPool = 0,
-      loginPool = 0,
-      presaleTaskPool = 0,
-      rolloverTapping = 0,
-      rolloverSocialTask = 0,
-      rolloverReferral = 0,
-      rolloverLogin = 0,
-      rolloverPresaleTask =
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0]; // format "YYYY-MM-DD"
+
+    if (poolData.lastPoolUpdateDate !== todayString) {
+      const updatedData = {
+        ...poolData,
+        lastPoolUpdateDate: todayString,
+        tappingPool: poolData.tappingPool + poolData.rolloverTapping + 1000000000, // +1 billion
+        socialTaskPool: poolData.socialTaskPool + poolData.rolloverSocialTask + 666000000,
+        referralPool: poolData.referralPool + poolData.rolloverRefferal + 666000000,
+        loginPool: poolData.loginPool + poolData.rolloverLogin + 666000000,
+        presaleTaskPool: poolData.presaleTaskPool + poolData.rolloverPresaleTask + 333000000,
+        rolloverTapping: 0,
+        rolloverSocialTask: 0,
+        rolloverRefferal: 0,
+        rolloverLogin: 0,
+        rolloverPresaleTask: 0,
+        totalTappedToday: 0,
+      };
+
+      await poolDoc.set(updatedData);
+
+      return res.status(200).json({ message: "Pool successfully reset and rolled over!" });
+    } else {
+      return res.status(200).json({ message: "Pool already updated today" });
+    }
+  } catch (error) {
+    console.error("Error resetting pool:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+}
