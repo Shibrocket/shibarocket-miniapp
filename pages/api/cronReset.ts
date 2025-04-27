@@ -1,13 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getFirestore } from "firebase-admin/firestore";
-import { initFirebaseAdmin } from "../../utils/firebaseAdmin";
+import { db } from "../../utils/firebaseAdmin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    await initFirebaseAdmin();
-    const db = getFirestore();
-
-    const poolDoc = db.doc("pools/main");
+    const poolDoc = db.collection("pools").doc("main");
     const poolSnap = await poolDoc.get();
 
     if (!poolSnap.exists) {
@@ -15,15 +11,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const poolData = poolSnap.data();
-
     const today = new Date();
-    const todayString = today.toISOString().split('T')[0]; // format "YYYY-MM-DD"
+    const todayString = today.toISOString().split('T')[0];
 
     if (poolData.lastPoolUpdateDate !== todayString) {
       const updatedData = {
         ...poolData,
         lastPoolUpdateDate: todayString,
-        tappingPool: poolData.tappingPool + poolData.rolloverTapping + 1000000000, // +1 billion
+        tappingPool: poolData.tappingPool + poolData.rolloverTapping + 1000000000,
         socialTaskPool: poolData.socialTaskPool + poolData.rolloverSocialTask + 666000000,
         referralPool: poolData.referralPool + poolData.rolloverRefferal + 666000000,
         loginPool: poolData.loginPool + poolData.rolloverLogin + 666000000,
@@ -37,7 +32,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       await poolDoc.set(updatedData);
-
       return res.status(200).json({ message: "Pool successfully reset and rolled over!" });
     } else {
       return res.status(200).json({ message: "Pool already updated today" });
