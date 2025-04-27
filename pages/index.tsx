@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, collection, getDocs } from "firebase/firestore";
+import Countdown from "react-countdown";
 
 export default function Home() {
   const [energy, setEnergy] = useState(400);
@@ -140,8 +141,9 @@ export default function Home() {
       </h1>
 
       <div style={{ margin: "20px", fontSize: "20px", color: "#333" }}>
-        <strong>Presale Countdown:</strong> {countdown}
-        <div style={{ fontSize: "16px", color: "#777", marginTop: "5px" }}>
+       <strong>Presale Countdown:</strong>
+       <Countdown date={new Date("2025-05-20T00:00:00Z")} /> 
+       <div style={{ fontSize: "16px", color: "#777", marginTop: "5px" }}>
           Get ready for the $SHROCK Presale!
         </div>
       </div>
