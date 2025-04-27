@@ -15,7 +15,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid boost request" });
   }
 
-  await initFirebaseAdmin();
   const userRef = db.collection("users").doc(telegramId);
   const userSnap = await userRef.get();
 
