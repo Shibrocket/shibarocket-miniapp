@@ -1,34 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-// Define the BoostResponse type
-interface BoostResponse {
-  success: boolean;
-  message: string;
-}
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const ApplyBoost = () => {
-  const [boostStatus, setBoostStatus] = useState<string>('');
+  const [boostStatus, setBoostStatus] = useState<string>("Loading...");
 
-  const applyBoost = async () => {
-    try {
-      // Make the API call to the applyBoost endpoint
-      const response = await axios.get('/api/applyBoost'); // Replace with your API endpoint
-      
-      // Cast the response data to BoostResponse type
-      const data: BoostResponse = response.data;
-      
-      // Use the 'message' property from the response
-      setBoostStatus(data.message); // Now this is valid
-    } catch (error) {
-      console.error('Error fetching boost status', error);
-    }
-  };
+  useEffect(() => {
+    const fetchBoostStatus = async () => {
+      try {
+        const response = await axios.get("/api/applyBoost");
+        
+        if (response.data && typeof response.data.message === "string") {
+          setBoostStatus(response.data.message); // Safely set the message
+        } else {
+          setBoostStatus("Boost status not available");
+        }
+      } catch (error) {
+        console.error("Error fetching boost status", error);
+        setBoostStatus("Failed to load boost status");
+      }
+    };
+
+    fetchBoostStatus();
+  }, []);
 
   return (
     <div>
-      <button onClick={applyBoost}>Apply Boost</button>
-      <div>{boostStatus}</div>
+      <h1>Apply Boost</h1>
+      <p>{boostStatus}</p>
     </div>
   );
 };
