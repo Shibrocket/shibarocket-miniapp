@@ -1,31 +1,26 @@
-import { db } from '../../utils/firebaseAdmin';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { db } from '../../utils/firebaseAdmin'; // Import your Firestore db instance
 
-const boostMap = {
-  referral: 50,
-  social: 100,
-  streak: 50,
-  ad: 100 
+type ResponseData = {
+  message: string;
 };
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseData>
+) {
+  try {
+    if (req.method !== 'GET') {
+      return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-  const { telegramId, type } = req.body;
-  if (!telegramId || !type || !boostMap[type]) {
-    return res.status(400).json({ error: "Invalid boost request" });
+    // Your logic here
+    // Example: fetch boost data from Firestore if needed
+    // const boostDoc = await db.collection('boosts').doc('boostId').get();
+
+    return res.status(200).json({ message: 'Boost applied successfully!' });
+  } catch (error) {
+    console.error('Error in applyBoost:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
-
-  const userRef = db.collection("users").doc(telegramId);
-  const userSnap = await userRef.get();
-
-  if (!userSnap.exists) return res.status(404).json({ error: "User not found" });
-
-  const currentBoost = userSnap.data().boostEnergy || 0;
-  const boost = boostMap[type];
-
-  const newBoost = Math.min(currentBoost + boost, 100);
-
-  await userRef.update({ boostEnergy: newBoost });
-
-  return res.status(200).json({ newBoost });
 }
