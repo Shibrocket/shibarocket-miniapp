@@ -7,8 +7,10 @@ const ApplyBoost = () => {
   useEffect(() => {
     const fetchBoostStatus = async () => {
       try {
-        const response = await axios.get("/api/applyBoost");
-        
+        const response = await axios.get<{ message: string }>("/api/applyBoost");
+        //      ----------^^^^^^^^^^^^^^
+        // This tells TypeScript the response.data will have a message:string
+
         if (response.data && typeof response.data.message === "string") {
           setBoostStatus(response.data.message); // Safely set the message
         } else {
