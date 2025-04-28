@@ -1,6 +1,7 @@
 // pages/admin.tsx
 
 import { useState, useEffect } from "react";
+import axios from 'axios';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
