@@ -1,26 +1,44 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '../../utils/firebaseAdmin'; // Import your Firestore db instance
+import { db } from "../../utils/firebaseAdmin";
 
-type ResponseData = {
-  message: string;
-};
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).end();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
-) {
+  const { userId, boostType } = req.body;
+  if (!userId || !boostType) {
+    return res.status(400).json({ message: "Missing userId or boostType" });
+  }
+
   try {
-    if (req.method !== 'GET') {
-      return res.status(405).json({ message: 'Method not allowed' });
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return res.status(404).json({ message: "User not found" });
+
+    const userData = userSnap.data();
+
+    const configSnap = await db.collection("settings").doc("config").get();
+    const config = configSnap.data();
+
+    const currentEnergy = userData.energy || 0;
+    const currentBoosted = userData.boostedEnergy || 0;
+    const maxEnergyWithBoost = config.maxEnergyWithBoost || 500;
+    const adBoost = config.adsEnergyReward || 100;
+
+    if (currentEnergy + currentBoosted >= maxEnergyWithBoost) {
+      return res.status(200).json({ success: false, message: "Energy boost limit reached" });
     }
 
-    // Your logic here
-    // Example: fetch boost data from Firestore if needed
-    // const boostDoc = await db.collection('boosts').doc('boostId').get();
+    const boostAmount = boostType === "ad" ? adBoost : 0;
 
-    return res.status(200).json({ message: 'Boost applied successfully!' });
+    await userRef.update({
+      boostedEnergy: currentBoosted + boostAmount,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Boosted ${boostAmount} energy. Total now: ${currentEnergy + currentBoosted + boostAmount}`,
+    });
   } catch (error) {
-    console.error('Error in applyBoost:', error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Apply boost error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 }
