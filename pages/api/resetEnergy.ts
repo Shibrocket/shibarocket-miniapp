@@ -1,28 +1,34 @@
 import { db } from "../../utils/firebaseAdmin";
+import { Timestamp } from "firebase-admin/firestore";
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).end();
+
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ message: "Missing userId" });
 
   try {
-    // Get all users from Firestore
-    const usersSnapshot = await db.collection("users").get();
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return res.status(404).json({ message: "User not found" });
 
-    // Create a batch write
-    const batch = db.batch();
+    const userData = userSnap.data();
 
-    usersSnapshot.forEach((userDoc) => {
-      // Update each user's energy back to 400
-      batch.update(userDoc.ref, { energy: 400 });
+    // Get config
+    const configSnap = await db.collection("settings").doc("config").get();
+    const config = configSnap.data();
+    const maxEnergy = config.maxEnergyPerDay || 400;
+
+    // Reset user energy
+    await userRef.update({
+      energy: maxEnergy,
+      boostedEnergy: 0,
+      lastLoginDate: Timestamp.now().toDate().toISOString().split("T")[0], // update login date
     });
 
-    // Commit the batch
-    await batch.commit();
-
-    res.status(200).json({ message: "Energy reset successfully for all users." });
+    return res.status(200).json({ success: true, message: `Energy reset to ${maxEnergy}` });
   } catch (error) {
-    console.error("Error resetting energy:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Reset error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 }
