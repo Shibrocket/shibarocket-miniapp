@@ -39,5 +39,7 @@ export default async function handler(req, res) {
     console.error("Reset error:", error);
     return res.status(500).json({ message: "Server error during energy reset" });
   }
+}
+
 
 
