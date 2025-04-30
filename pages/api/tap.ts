@@ -1,43 +1,41 @@
 import { db } from "../../utils/firebaseAdmin";
-
-const SHROCK_PER_TAP = 5;
+import { getDoc, doc, Timestamp } from "firebase-admin/firestore";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).end();
 
-  const { telegramId } = req.body;
-
-  if (!telegramId) {
-    return res.status(400).json({ message: "Missing telegramId" });
-  }
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ message: "Missing userId" });
 
   try {
-    const userRef = db.collection("users").doc(telegramId);
+    // Get user doc
+    const userRef = db.collection("users").doc(userId);
     const userSnap = await userRef.get();
 
-    if (!userSnap.exists) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+    if (!userSnap.exists) return res.status(404).json({ message: "User not found" });
     const userData = userSnap.data();
 
+    // Get config
+    const settingsSnap = await db.collection("settings").doc("config").get();
+    const config = settingsSnap.data();
+
+    const tapReward = config.tapReward || 5;
+    const maxEnergy = config.maxEnergyPerDay || 400;
+
+    // Check if user has energy
     if (userData.energy <= 0) {
-      return res.status(400).json({ message: "No energy left, come back later!" });
+      return res.status(400).json({ message: "No energy left" });
     }
 
-    // Deduct 1 energy and add SHROCK_PER_TAP reward
+    // Update user energy and SHROCK earned
     await userRef.update({
       energy: userData.energy - 1,
-      shrockBalance: (userData.shrockBalance || 0) + SHROCK_PER_TAP,
-      totalTapped: (userData.totalTapped || 0) + 1,
+      shrockEarned: (userData.shrockEarned || 0) + tapReward,
     });
 
-    return res.status(200).json({ message: "Tap successful!" });
-
+    return res.status(200).json({ success: true, reward: tapReward });
   } catch (error) {
-    console.error("Error tapping:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("Tap error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 }
