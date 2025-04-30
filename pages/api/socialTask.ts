@@ -11,34 +11,32 @@ export default async function handler(req, res) {
     }
 
     const userRef = db.collection("users").doc(userId);
-    const [userSnap, configSnap] = await Promise.all([
-      userRef.get(),
-      db.collection("settings").doc("config").get()
-    ]);
+    const configSnap = await db.collection("settings").doc("config").get();
 
-    if (!userSnap.exists) {
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const userData = userSnap.data();
-    const completedTasks = userData.socialTasksCompleted || [];
+    const userData = userDoc.data();
+    const completed = userData.socialTasksCompleted || [];
 
-    if (completedTasks.includes(taskId)) {
+    if (completed.includes(taskId)) {
       return res.status(400).json({ success: false, message: "Task already completed" });
     }
 
     const reward = configSnap.data().socialTaskReward || 20000;
-    completedTasks.push(taskId);
 
     await userRef.update({
-      socialTasksCompleted: completedTasks,
-      shrockEarned: (userData.shrockEarned || 0) + reward
+      socialTasksCompleted: [...completed, taskId],
+      shrockEarned: (userData.shrockEarned || 0) + reward,
     });
 
     return res.status(200).json({
       success: true,
-      message: `Social task rewarded with ${reward} $SHROCK!`
+      message: `Task completed. You earned ${reward} $SHROCK.`,
     });
+
   } catch (error) {
     console.error("Social task error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
