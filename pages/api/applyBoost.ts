@@ -3,42 +3,28 @@ import { db } from "../../utils/firebaseAdmin";
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { userId, boostType } = req.body;
-  if (!userId || !boostType) {
-    return res.status(400).json({ message: "Missing userId or boostType" });
-  }
-
   try {
+    const userId = req.headers["x-user-id"] || req.query.userId;
+    if (!userId) return res.status(400).json({ success: false, message: "User ID is required" });
+
     const userRef = db.collection("users").doc(userId);
     const userSnap = await userRef.get();
-    if (!userSnap.exists) return res.status(404).json({ message: "User not found" });
-
-    const userData = userSnap.data();
+    if (!userSnap.exists) return res.status(404).json({ success: false, message: "User not found" });
 
     const configSnap = await db.collection("settings").doc("config").get();
     const config = configSnap.data();
-
-    const currentEnergy = userData.energy || 0;
-    const currentBoosted = userData.boostedEnergy || 0;
-    const maxEnergyWithBoost = config.maxEnergyWithBoost || 500;
-    const adBoost = config.adsEnergyReward || 100;
-
-    if (currentEnergy + currentBoosted >= maxEnergyWithBoost) {
-      return res.status(200).json({ success: false, message: "Energy boost limit reached" });
-    }
-
-    const boostAmount = boostType === "ad" ? adBoost : 0;
+    const boostAmount = config.adsEnergyReward || 100;
 
     await userRef.update({
-      boostedEnergy: currentBoosted + boostAmount,
+      boostedEnergy: boostAmount,
     });
 
     return res.status(200).json({
       success: true,
-      message: `Boosted ${boostAmount} energy. Total now: ${currentEnergy + currentBoosted + boostAmount}`,
+      message: `Boost applied: +${boostAmount} energy`,
     });
   } catch (error) {
-    console.error("Apply boost error:", error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Boost error:", error);
+    return res.status(500).json({ success: false, message: "Server error during boost" });
   }
 }
