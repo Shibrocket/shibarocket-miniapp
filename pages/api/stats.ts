@@ -1,39 +1,23 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '../../utils/firebaseAdmin';
+import { db } from "../../utils/firebaseAdmin";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   try {
-    // Fetch total users
-    const usersSnapshot = await db.collection('users').get();
-    const totalUsers = usersSnapshot.size;
+    const usersSnap = await db.collection("users").get();
+    const userCount = usersSnap.size;
 
-    // Calculate total taps
-    let totalTaps = 0;
-    usersSnapshot.forEach(doc => {
+    let totalShrockEarned = 0;
+    usersSnap.forEach((doc) => {
       const data = doc.data();
-      totalTaps += data.totalTaps || 0;
+      totalShrockEarned += typeof data.shrockEarned === 'number' ? data.shrockEarned : 0;
     });
 
-    // Fetch pools
-    const poolsSnapshot = await db.collection('pools').doc('daily').get();
-    const loginSnapshot = await db.collection('pools').doc('login').get();
-    const referralSnapshot = await db.collection('pools').doc('referral').get();
-    const socialSnapshot = await db.collection('pools').doc('social').get();
-    const presaleSnapshot = await db.collection('pools').doc('presale').get();
-
-    const stats = {
-      totalUsers,
-      totalTaps,
-      dailyPool: poolsSnapshot.data()?.amount || 0,
-      loginPool: loginSnapshot.data()?.amount || 0,
-      referralPool: referralSnapshot.data()?.amount || 0,
-      socialPool: socialSnapshot.data()?.amount || 0,
-      presalePool: presaleSnapshot.data()?.amount || 0
-    };
-
-    res.status(200).json(stats);
+    res.status(200).json({
+      success: true,
+      totalUsers: userCount,
+      totalShrockEarned,
+    });
   } catch (error) {
-    console.error('Error fetching admin stats:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Stats API error:", error);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 }
