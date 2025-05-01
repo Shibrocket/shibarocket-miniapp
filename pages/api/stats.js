@@ -1,86 +1,69 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+// api/stats.js
+import admin from 'firebase-admin';
 
-// Firebase configuration (Replace with your actual config - but these should come from env vars)
+// Initialize Firebase Admin SDK (only once)
+let firebaseApp;
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-};
-
-// Initialize Firebase (only once)
-function initializeFirebaseApp() {
-  try {
-    return getApp();
-  } catch {
-    return initializeApp(firebaseConfig);
+function initializeFirebaseAdmin() {
+  if (!firebaseApp) {
+    try {
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY ? process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+        }),
+        // databaseURL: process.env.FIREBASE_DATABASE_URL, // Optional: if you use Realtime Database
+      });
+    } catch (error) {
+      console.error('Firebase Admin SDK initialization error:', error);
+      throw error; // Propagate the error
+    }
   }
+  return firebaseApp;
 }
 
-const app = initializeFirebaseApp();
-const db = getFirestore(app);
-
 export default async function handler(req, res) {
-  console.log("NEXT_PUBLIC_FIREBASE_API_KEY:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
-  console.log("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:", process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
-  console.log("NEXT_PUBLIC_FIREBASE_PROJECT_ID:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
-  console.log("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:", process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-  console.log("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:", process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID);
-  console.log("NEXT_PUBLIC_FIREBASE_APP_ID:", process.env.NEXT_PUBLIC_FIREBASE_APP_ID);
-  console.log("NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID:", process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID);
-
-  console.log("FIREBASE_ADMIN_TYPE:", process.env.FIREBASE_ADMIN_TYPE);
-  console.log("FIREBASE_ADMIN_PROJECT_ID:", process.env.FIREBASE_ADMIN_PROJECT_ID);
-  console.log("FIREBASE_ADMIN_PRIVATE_KEY_ID:", process.env.FIREBASE_ADMIN_PRIVATE_KEY_ID);
-  console.log("FIREBASE_ADMIN_PRIVATE_KEY:", process.env.FIREBASE_ADMIN_PRIVATE_KEY ? process.env.FIREBASE_ADMIN_PRIVATE_KEY.substring(0, 20) + '...' : undefined);  // Log only the beginning for security
-  console.log("FIREBASE_ADMIN_CLIENT_EMAIL:", process.env.FIREBASE_ADMIN_CLIENT_EMAIL);
-  console.log("FIREBASE_ADMIN_CLIENT_ID:", process.env.FIREBASE_ADMIN_CLIENT_ID);
-  console.log("FIREBASE_ADMIN_AUTH_URI:", process.env.FIREBASE_ADMIN_AUTH_URI);
-  console.log("FIREBASE_ADMIN_TOKEN_URI:", process.env.FIREBASE_ADMIN_TOKEN_URI);
-  console.log("FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL:", process.env.FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL);
-  console.log("FIREBASE_ADMIN_CLIENT_X509_CERT_URL:", process.env.FIREBASE_ADMIN_CLIENT_X509_CERT_URL);
-  console.log("FIREBASE_ADMIN_UNIVERSE_DOMAIN:", process.env.FIREBASE_ADMIN_UNIVERSE_DOMAIN);
-
   if (req.method === 'GET') {
     try {
-      // 1. Fetch User Count
-      const usersSnapshot = await getDocs(collection(db, 'users'));
+      // Initialize Firebase Admin
+      const app = initializeFirebaseAdmin();
+      const db = admin.firestore(app);
+
+      // --- 1. Fetch User Count ---
+      const usersSnapshot = await db.collection('users').get();
       const userCount = usersSnapshot.size;
 
-      // 2. Example: Fetch total shrockEarned from all users
+      // --- 2. Fetch total shrockEarned from all users ---
       let totalShrockEarned = 0;
       usersSnapshot.forEach((doc) => {
         const data = doc.data();
-        totalShrockEarned += data.shrockEarned || 0; // Use || 0 to handle potential missing fields
+        totalShrockEarned += data.shrockEarned || 0;
       });
 
-      // 3. Example:  Fetch the latest daily pool data
-      const today = new Date().toISOString().slice(0, 10); // Get today's date in YYYY-MM-DD format
-      const poolsDoc = doc(db, 'pools', today);  // Use doc() to get a single document
-      const poolsSnap = await getDoc(poolsDoc);
+      // --- 3. Fetch the latest daily pool data ---
+      const today = new Date().toISOString().slice(0, 10);
+      const poolsDoc = db.collection('pools').doc(today);
+      const poolsSnap = await poolsDoc.get();
+      const poolsData = poolsSnap.data() || {};
 
-      const poolsData = poolsSnap.data() || {}; // Use || {} in case the document doesn't exist
-
-      // Construct the response
+      // --- 4. Construct the response ---
       const stats = {
         userCount,
         totalShrockEarned,
-        ...poolsData, // Include today's pool data
-        // Add more stats as needed (e.g., from the 'settings' collection)
+        ...poolsData,
+        // Add more stats as needed
       };
 
-      res.status(200).json(stats); // Send a successful response with the stats
+      res.status(200).json(stats);
+
     } catch (error) {
       console.error('Error fetching stats:', error);
       console.error('Error details:', error.message, error.code, error.stack);
-      res.status(500).json({ error: 'Failed to fetch stats' }); // Send an error response
+      res.status(500).json({ error: 'Failed to fetch stats' });
     }
   } else {
-    res.status(405).json({ error: 'Method Not Allowed' }); // Handle other HTTP methods
+    res.setHeader('Allow', ['GET']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

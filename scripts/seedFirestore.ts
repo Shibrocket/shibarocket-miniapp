@@ -1,28 +1,21 @@
 import { db } from "../utils/firebaseAdmin";
 
-async function seedFirestore() {
-  // Users - example user
-  await db.collection("users").doc("guestUser").set({
-    totalTaps: 2400,
-    shrockEarned: 12000,
-    energy: 400,
-    lastLoginDate: "2025-05-01"
+const seed = async () => {
+  const testUsers = [
+    { userId: "testuser1", energy: 400, boostedEnergy: 0, loginStreak: 1, referrals: 0, shrockEarned: 0, lastLoginDate: "2025-04-30" },
+    { userId: "testuser2", energy: 300, boostedEnergy: 50, loginStreak: 2, referrals: 1, shrockEarned: 1000, lastLoginDate: "2025-04-30" },
+    { userId: "testuser3", energy: 200, boostedEnergy: 100, loginStreak: 3, referrals: 2, shrockEarned: 2500, lastLoginDate: "2025-04-30" },
+  ];
+
+  const batch = db.batch();
+
+  testUsers.forEach(user => {
+    const userRef = db.collection("users").doc(user.userId);
+    batch.set(userRef, user, { merge: true });
   });
 
-  // Pools
-  const pools = {
-    daily: 1000000000,
-    login: 666000000,
-    referral: 666000000,
-    social: 666000000,
-    presale: 333000000,
-  };
+  await batch.commit();
+  console.log("Test users seeded successfully.");
+};
 
-  for (const [key, value] of Object.entries(pools)) {
-    await db.collection("pools").doc(key).set({ amount: value });
-  }
-
-  console.log("Firestore seeded successfully!");
-}
-
-seedFirestore().catch(console.error);
+seed().catch(console.error);
