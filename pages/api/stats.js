@@ -31,28 +31,24 @@ export default async function handler(req, res) {
       const usersSnapshot = await getDocs(collection(db, 'users'));
       const userCount = usersSnapshot.size;
 
-      // 2. Fetch Total Rewards Claimed (Example)
-      let totalRewards = 0;
-      const rewardsSnapshot = await getDocs(collection(db, 'rewards')); // Assuming you have a 'rewards' collection
-      rewardsSnapshot.forEach((doc) => {
+      // 2. Example: Fetch total shrockEarned from all users
+      let totalShrockEarned = 0;
+      usersSnapshot.forEach((doc) => {
         const data = doc.data();
-        totalRewards += data.amount; // Assuming each reward has an 'amount' field
+        totalShrockEarned += data.shrockEarned || 0; // Use || 0 to handle potential missing fields
       });
 
-      // 3. Fetch Energy Usage (Example)
-      let totalEnergyUsed = 0;
-      const energySnapshot = await getDocs(collection(db, 'energyLogs')); // Assuming you have 'energyLogs'
-      energySnapshot.forEach((doc) => {
-        const data = doc.data();
-        totalEnergyUsed += data.energyConsumed; // Assuming each log has 'energyConsumed'
-      });
+        // 3. Example:  Fetch the latest daily pool data
+        const today = new Date().toISOString().slice(0, 10); // Get today's date in YYYY-MM-DD format
+        const poolsDoc = await db.collection('pools').doc(today).get();
+        const poolsData = poolsDoc.data() || {}; // Use || {} in case the document doesn't exist
 
       // Construct the response
       const stats = {
         userCount,
-        totalRewards,
-        totalEnergyUsed,
-        // Add more stats as needed
+        totalShrockEarned,
+        ...poolsData, // Include today's pool data
+        // Add more stats as needed (e.g., from the 'settings' collection)
       };
 
       res.status(200).json(stats); // Send a successful response with the stats
