@@ -1,23 +1,35 @@
 import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+type StatsResponse = {
+  success: boolean;
+  totalUsers: number;
+  totalShrockEarned: number;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<StatsResponse | { message: string }>
+) {
   try {
-    const usersSnap = await db.collection("users").get();
-    const userCount = usersSnap.size;
+    const snapshot = await db.collection("users").get();
 
+    let totalUsers = 0;
     let totalShrockEarned = 0;
-    usersSnap.forEach((doc) => {
+
+    snapshot.forEach(doc => {
+      totalUsers += 1;
       const data = doc.data();
-      totalShrockEarned += typeof data.shrockEarned === 'number' ? data.shrockEarned : 0;
+      totalShrockEarned += data.shrockEarned || 0;
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      totalUsers: userCount,
+      totalUsers,
       totalShrockEarned,
     });
   } catch (error) {
-    console.error("Stats API error:", error);
-    res.status(500).json({ success: false, error: "Server error" });
+    console.error("Stats API Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
