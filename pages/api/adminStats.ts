@@ -16,19 +16,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const totalReferrals = users.reduce((sum, user) => sum + ((user.referredUsers?.length || 0)), 0);
     const totalLoginRewards = users.reduce((sum, user) => sum + (user.loginStreak || 0), 0);
 
-    // Calculate pools
+    // SHROCK amounts
     const tapReward = 5;
     const referralReferrer = 70000;
     const referralReferee = 30000;
-    const loginBase = 500; // base for day 1
+    const loginDay1 = 500;
     const presaleReward = 100000;
-    const socialReward = 20000;
 
     const dailyPool = totalTaps * tapReward;
-    const loginPool = totalLoginRewards * loginBase;
+    const loginPool = totalLoginRewards * loginDay1;
     const referralPool = totalReferrals * (referralReferrer + referralReferee);
-    const socialPool = users.reduce((sum, user) => sum + (user.socialTaskRewards || 0), 0);
-    const presalePool = users.reduce((sum, user) => sum + (user.hasClaimedPresale ? presaleReward : 0), 0);
+    const socialPool = users.reduce((sum, u) => sum + (u.socialTaskRewards || 0), 0);
+    const presalePool = users.reduce((sum, u) => sum + (u.hasClaimedPresale ? presaleReward : 0), 0);
 
     return res.status(200).json({
       success: true,
@@ -42,8 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         loginPool,
         referralPool,
         socialPool,
-        presalePool,
-      },
+        presalePool
+      }
     });
   } catch (error) {
     console.error("Admin stats error:", error);
