@@ -1,57 +1,62 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '../../utils/firebaseAdmin';
+import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
   }
 
   const { userId } = req.body;
   if (!userId) {
-    return res.status(400).json({ error: 'Missing userId' });
+    return res.status(400).json({ message: "Missing userId" });
   }
 
-  try {
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
+  const userRef = db.collection("users").doc(userId);
+  const userSnap = await userRef.get();
 
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const settingsDoc = await db.collection('settings').doc('config').get();
-    const settings = settingsDoc.data();
-
-    if (!settings) {
-      return res.status(500).json({ error: 'Settings not found' });
-    }
-
-    const user = userDoc.data();
-    const currentEnergy = user?.energy || 0;
-    const maxEnergy = settings.maxEnergyWithBoost || 500;
-
-    if (currentEnergy <= 0) {
-      return res.status(400).json({ message: 'No energy left. Please wait or boost.' });
-    }
-
-    const earned = (settings.tapReward || 5);
-    const newEnergy = currentEnergy - 1;
-    const newTotal = (user?.shrockEarned || 0) + earned;
-
-    await userRef.update({
-      energy: newEnergy,
-      shrockEarned: newTotal,
+  if (!userSnap.exists) {
+    await userRef.set({
+      energy: 399,
+      shrock: 5,
+      totalEarned: 5,
+      totalTaps: 1,
+      lastTap: Date.now(),
     });
 
     return res.status(200).json({
-      message: 'Tap successful',
-      earned,
-      newEnergy,
-      totalEarned: newTotal
+      message: "Tap successful",
+      earned: 5,
+      newEnergy: 399,
+      totalEarned: 5,
     });
-
-  } catch (error: any) {
-    console.error('Tap API error:', error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
+
+  const current = userSnap.data() || {};
+  const energy = current.energy || 0;
+  const tapReward = 5;
+
+  if (energy <= 0) {
+    return res.status(400).json({ message: "Out of energy" });
+  }
+
+  const newEnergy = energy - 1;
+  const newShrock = (current.shrock || 0) + tapReward;
+  const newTotal = (current.totalEarned || 0) + tapReward;
+  const newTotalTaps = (current.totalTaps || 0) + 1;
+
+  await userRef.update({
+    energy: newEnergy,
+    shrock: newShrock,
+    totalEarned: newTotal,
+    totalTaps: newTotalTaps,
+    lastTap: Date.now(),
+  });
+
+  return res.status(200).json({
+    message: "Tap successful",
+    earned: tapReward,
+    newEnergy,
+    totalEarned: newTotal,
+    totalTaps: newTotalTaps,
+  });
 }
