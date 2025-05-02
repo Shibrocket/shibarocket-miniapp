@@ -1,89 +1,13 @@
-// pages/admin.tsx
+import { useEffect, useState } from "react";
 
-import { useState, useEffect } from "react";
-import axios from 'axios';
+export default function AdminDashboard() { const [stats, setStats] = useState<any>(null); const [loading, setLoading] = useState(true);
 
-export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+useEffect(() => { fetch("/api/adminStats") .then((res) => res.json()) .then((data) => { setStats(data); setLoading(false); }); }, []);
 
-  const adminPassword = "shrock123"; // <<< Set your secret password here
+if (loading) return <div className="p-4">Loading admin stats...</div>; if (!stats?.success) return <div className="p-4 text-red-500">Failed to load stats</div>;
 
-  const handleLogin = () => {
-    if (passwordInput === adminPassword) {
-      setIsAuthenticated(true);
-    } else {
-      alert("Incorrect password!");
-    }
-  };
+return ( <div className="p-6 max-w-3xl mx-auto"> <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1> <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> <StatCard label="Total Users" value={stats.totalUsers} /> <StatCard label="Total SHROCK Distributed" value={stats.totalShrock} /> <StatCard label="Total Taps" value={stats.totalTaps} /> <StatCard label="Total Referrals" value={stats.totalReferrals} /> <StatCard label="Login Rewards Given" value={stats.totalLoginRewards} /> </div> </div> ); }
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setLoadingStats(true);
-      fetch("/api/adminStats")
-        .then((res) => res.json())
-        .then((data) => {
-          setStats(data.data);
-          setLoadingStats(false);
-        })
-        .catch((err) => {
-          console.error("Failed to load admin stats", err);
-          setLoadingStats(false);
-        });
-    }
-  }, [isAuthenticated]);
+function StatCard({ label, value }: { label: string; value: number }) { return ( <div className="rounded-2xl shadow p-4 bg-white border border-gray-100"> <h2 className="text-sm text-gray-600 mb-1">{label}</h2> <div className="text-xl font-semibold">{value}</div> </div> ); }
 
-  if (!isAuthenticated) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h1>Admin Login</h1>
-        <input
-          type="password"
-          placeholder="Enter admin password"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
-          style={{
-            padding: "10px",
-            fontSize: "16px",
-            width: "250px",
-            marginBottom: "10px",
-          }}
-        />
-        <br />
-        <button
-          onClick={handleLogin}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            backgroundColor: "#ff5733",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-          }}
-        >
-          Enter
-        </button>
-      </div>
-    );
-  }
 
-  return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>ShibaRocket Admin Dashboard</h1>
-      {loadingStats ? (
-        <p>Loading stats...</p>
-      ) : stats ? (
-        <div>
-          <h2>Pool Stats:</h2>
-          <pre style={{ textAlign: "left", display: "inline-block" }}>
-            {JSON.stringify(stats, null, 2)}
-          </pre>
-        </div>
-      ) : (
-        <p>No stats available.</p>
-      )}
-    </div>
-  );
-}
