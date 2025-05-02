@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function AdminDashboard() {
   const [passwordInput, setPasswordInput] = useState("");
@@ -48,6 +48,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.totalUsers} />
         <StatCard label="SHROCK Distributed" value={stats.totalShrock} />
