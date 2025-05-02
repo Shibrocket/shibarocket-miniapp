@@ -1,41 +1,43 @@
-import { db } from "../../utils/firebaseAdmin";
+import { db } from "@/utils/firebaseAdmin";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ success: false, message: "Method not allowed" });
-  }
-
   try {
     const usersSnap = await db.collection("users").get();
-    const users = usersSnap.docs.map(doc => doc.data());
 
-    const totalUsers = users.length;
-    const totalShrock = users.reduce((sum, user) => sum + (user.shrock || 0), 0);
-    const totalTaps = users.reduce((sum, user) => sum + (user.totalTaps || 0), 0);
-    const totalReferrals = users.reduce((sum, user) => sum + ((user.referredUsers?.length || 0)), 0);
-    const totalLoginRewards = users.reduce((sum, user) => sum + (user.loginStreak || 0), 0);
+    let totalShrock = 0;
+    let totalTaps = 0;
+    let totalReferrals = 0;
+    let totalLoginRewards = 0;
+    let dailyPool = 0;
+    let loginPool = 0;
+    let referralPool = 0;
+    let socialPool = 0;
+    let presalePool = 0;
 
-    // SHROCK values
-    const tapReward = 5;
-    const referralReferrer = 70000;
-    const referralReferee = 30000;
-    const loginDay1 = 500;
-    const presaleReward = 100000;
-    const socialRewardPerTask = 20000;
+    usersSnap.forEach(doc => {
+      const user = doc.data();
+      totalShrock += user.shrock || 0;
+      totalTaps += user.totalTaps || 0;
+      totalReferrals += user.referrals || 0;
+      totalLoginRewards += user.loginStreak || 0;
 
-    const dailyPool = totalTaps * tapReward;
-    const loginPool = totalLoginRewards * loginDay1;
-    const referralPool = totalReferrals * (referralReferrer + referralReferee);
-    const socialPool = users.reduce(
-      (sum, u) => sum + ((u.socialTasksCompleted?.length || 0) * socialRewardPerTask),
-      0
-    );
-    const presalePool = users.reduce((sum, u) => sum + (u.hasClaimedPresale ? presaleReward : 0), 0);
+      dailyPool += (user.totalTaps || 0) * 5;
+      loginPool += (user.loginStreak || 0) * 500;
+      referralPool += ((user.referrals || 0) * 30000);
+      if (user.referrer) referralPool += 70000;
 
-    return res.status(200).json({
+      const taskCount = Array.isArray(user.socialTasksCompleted)
+        ? user.socialTasksCompleted.length
+        : 0;
+      socialPool += taskCount * 20000;
+
+      if (user.hasClaimedPresale) presalePool += 100000;
+    });
+
+    res.status(200).json({
       success: true,
-      totalUsers,
+      totalUsers: usersSnap.size,
       totalShrock,
       totalTaps,
       totalReferrals,
@@ -46,10 +48,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         referralPool,
         socialPool,
         presalePool,
-      },
+      }
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("adminStats error:", error);
+    res.status(500).json({ success: false, error: "Failed to load stats" });
   }
 }
