@@ -2,21 +2,23 @@ import { db } from "../../utils/firebaseAdmin";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
     const configSnap = await db.collection("settings").doc("config").get();
 
     if (!configSnap.exists) {
-      return res.status(500).json({ error: "Settings/config document not found in Firestore." });
+      return res.status(500).json({ error: "Settings/config document not found" });
     }
 
     const config = configSnap.data() || {};
 
-    res.status(200).json({
+    return res.status(200).json({
       tapReward: config.tapReward ?? 5,
       maxEnergyPerDay: config.maxEnergyPerDay ?? 400,
-      maxEnergyWithBoost: config.maxEnergyWithBoost ?? 500,
+      maxEnergyWithBoost: config.maxEnergyWithBoost ?? 800,
       rewardResetDay: config.rewardResetDay ?? 7,
       dailyResetTimeUTC: config.dailyResetTimeUTC ?? "00:00",
 
@@ -27,11 +29,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       loginRewardDay5: config.loginRewardDay5 ?? 700,
       loginRewardDay6: config.loginRewardDay6 ?? 750,
 
-      referralRewardReferrer: config.referralRewardReferrer ?? 70000,
-      referralRewardReferee: config.referralRewardReferee ?? 30000,
+      referralRewardReferrer: config.referralRewardReferrer ?? 1000,
+      referralRewardReferee: config.referralRewardReferee ?? 500,
 
-      socialTaskReward: config.socialTaskReward ?? 20000,
-      presaleReminderReward: config.presaleReminderReward ?? 50000,
+      socialTaskReward: config.socialTaskReward ?? 200,
+      presaleReminderReward: config.presaleReminderReward ?? 100,
       quizReward: config.quizReward ?? 100000,
 
       adsEnergyReward: config.adsEnergyReward ?? 100,
@@ -39,6 +41,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (error) {
     console.error("Error fetching stats:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
