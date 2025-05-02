@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function AdminDashboard() {
   const [passwordInput, setPasswordInput] = useState("");
@@ -48,12 +48,21 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.totalUsers} />
         <StatCard label="SHROCK Distributed" value={stats.totalShrock} />
         <StatCard label="Total Taps" value={stats.totalTaps} />
         <StatCard label="Referrals" value={stats.totalReferrals} />
         <StatCard label="Login Rewards" value={stats.totalLoginRewards} />
+      </div>
+
+      <h2 className="text-xl font-semibold mb-3">SHROCK Pools</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard label="Daily Pool" value={stats.pools.dailyPool} />
+        <StatCard label="Login Pool" value={stats.pools.loginPool} />
+        <StatCard label="Referral Pool" value={stats.pools.referralPool} />
+        <StatCard label="Social Task Pool" value={stats.pools.socialPool} />
+        <StatCard label="Presale Task Pool" value={stats.pools.presalePool} />
       </div>
     </div>
   );
@@ -63,7 +72,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl shadow p-4 bg-white border border-gray-100">
       <h2 className="text-sm text-gray-600 mb-1">{label}</h2>
-      <div className="text-xl font-semibold">{value}</div>
+      <div className="text-xl font-semibold">{value.toLocaleString()} SHROCK</div>
     </div>
   );
 }
