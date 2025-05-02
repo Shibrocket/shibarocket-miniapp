@@ -7,7 +7,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (passwordInput === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    if (passwordInput === "shibarocketadmin") {
       setGranted(true);
       setLoading(true);
       const res = await fetch("/api/adminStats");
@@ -59,11 +59,11 @@ export default function AdminDashboard() {
 
       <h2 className="text-xl font-semibold mb-3">SHROCK Pools</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <StatCard label="Daily Pool" value={stats.pools.dailyPool} />
-        <StatCard label="Login Pool" value={stats.pools.loginPool} />
-        <StatCard label="Referral Pool" value={stats.pools.referralPool} />
-        <StatCard label="Social Task Pool" value={stats.pools.socialPool} />
-        <StatCard label="Presale Task Pool" value={stats.pools.presalePool} />
+        <StatCard label="Daily Pool" value={stats.pools?.dailyPool || 0} />
+        <StatCard label="Login Pool" value={stats.pools?.loginPool || 0} />
+        <StatCard label="Referral Pool" value={stats.pools?.referralPool || 0} />
+        <StatCard label="Social Task Pool" value={stats.pools?.socialPool || 0} />
+        <StatCard label="Presale Task Pool" value={stats.pools?.presalePool || 0} />
       </div>
     </div>
   );
@@ -77,3 +77,4 @@ function StatCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
