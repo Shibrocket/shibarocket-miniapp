@@ -1,4 +1,4 @@
-import { db } from "../../utils/firebaseAdmin";
+2import { db } from "../../utils/firebaseAdmin";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -11,9 +11,10 @@ export default async function handler(req, res) {
     const userSnap = await userRef.get();
     if (!userSnap.exists) return res.status(404).json({ success: false, message: "User not found" });
 
+    // Fetch the config document
     const configSnap = await db.collection("settings").doc("config").get();
     const config = configSnap.data();
-    const boostAmount = config.adsEnergyReward || 100;
+    const boostAmount = config?.adsEnergyReward ?? 100;
 
     await userRef.update({
       boostedEnergy: boostAmount,
