@@ -23,6 +23,10 @@ export default async function handler(req, res) {
     const userData = userSnap.data();
     const config = configSnap.data();
 
+    if (!userData || !config) {
+      return res.status(500).json({ success: false, message: "Data retrieval error" });
+    }
+
     let update: any = {};
     let reward = 0;
     let alreadyDone = false;
@@ -38,7 +42,7 @@ export default async function handler(req, res) {
     }
 
     if (alreadyDone) {
-      return res.status(400).json({ success: false, message: `You already completed ${type}` });
+      return res.status(400).json({ success: false, message: `You already completed the ${type} task.` });
     }
 
     update.shrockEarned = (userData.shrockEarned || 0) + reward;
