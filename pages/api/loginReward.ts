@@ -16,12 +16,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userRef = db.collection("users").doc(userId);
   const userSnap = await userRef.get();
 
-  let loginReward = 500;
+  const loginReward = 500;
 
   if (!userSnap.exists) {
-    await userRef.set({ loginStreak: 1, lastLogin: Date.now() });
+    await userRef.set({
+      loginStreak: 1,
+      lastLogin: Date.now(),
+      shrock: loginReward
+    });
   } else {
-    await userRef.update({ loginStreak: admin.firestore.FieldValue.increment(1) });
+    await userRef.update({
+      loginStreak: admin.firestore.FieldValue.increment(1),
+      lastLogin: Date.now(),
+      shrock: admin.firestore.FieldValue.increment(loginReward)
+    });
   }
 
   res.status(200).json({
