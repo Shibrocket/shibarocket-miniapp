@@ -1,6 +1,7 @@
 import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
   const { userId, action } = req.body;
@@ -19,23 +20,27 @@ export default async function handler(req, res) {
     }
 
     const userData = userDoc.data();
-    let updateData = {};
+    if (!userData) {
+      return res.status(500).json({ success: false, message: "User data is missing" });
+    }
+
+    let updateData: any = {};
     let reward = 0;
 
     if (action === "reminder" && !userData.presaleReminderSet) {
-      reward = configSnap.data().presaleReminderReward || 50000;
+      reward = configSnap.data()?.presaleReminderReward || 50000;
       updateData = {
         presaleReminderSet: true,
         shrockEarned: (userData.shrockEarned || 0) + reward,
       };
     } else if (action === "quiz" && !userData.quizCompleted) {
-      reward = configSnap.data().quizReward || 100000;
+      reward = configSnap.data()?.quizReward || 100000;
       updateData = {
         quizCompleted: true,
         shrockEarned: (userData.shrockEarned || 0) + reward,
       };
     } else {
-      return res.status(400).json({ success: false, message: "Already completed or invalid action" });
+      return res.status(400).json({ success: false, message: "Action already completed or invalid" });
     }
 
     await userRef.update(updateData);
@@ -46,6 +51,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Presale error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
