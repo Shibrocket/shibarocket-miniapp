@@ -1,42 +1,77 @@
-// pages/admin.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+
+interface AdminStats {
+  totalUsers: number;
+  totalTaps: number;
+  pools: {
+    tappingPool: number;
+    socialTaskPool: number;
+    referralPool: number;
+    loginPool: number;
+    presalePool: number;
+    totalDaily: number;
+    lastPoolUpdateDate: string;
+  };
+  settings: any;
+}
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalTaps: 0,
-    totalTokens: 0,
-  });
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/adminStats")
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/adminStats");
+        const data = await res.json();
         setStats(data);
         setLoading(false);
-      });
+      } catch (error) {
+        console.error("Failed to fetch admin stats:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  if (loading) return <p className="p-4">Loading...</p>;
+  if (loading) return <div className="p-4">Loading admin stats...</div>;
+
+  if (!stats) return <div className="p-4">No data available</div>;
 
   return (
-    <div className="min-h-screen p-8 bg-gray-100">
-      <h1 className="text-3xl font-bold mb-6">ShibaRocket Admin Dashboard</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white shadow-lg rounded-xl p-6">
-          <h2 className="text-xl font-semibold">Total Users</h2>
-          <p className="text-2xl text-blue-600 mt-2">{stats.totalUsers}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-4 shadow rounded-xl">
+          <h2 className="text-lg font-semibold">Users</h2>
+          <p>{stats.totalUsers}</p>
         </div>
-        <div className="bg-white shadow-lg rounded-xl p-6">
-          <h2 className="text-xl font-semibold">Total Taps</h2>
-          <p className="text-2xl text-green-600 mt-2">{stats.totalTaps}</p>
+        <div className="bg-white p-4 shadow rounded-xl">
+          <h2 className="text-lg font-semibold">Total Taps</h2>
+          <p>{stats.totalTaps}</p>
         </div>
-        <div className="bg-white shadow-lg rounded-xl p-6">
-          <h2 className="text-xl font-semibold">Total $SHROCK</h2>
-          <p className="text-2xl text-purple-600 mt-2">{stats.totalTokens}</p>
-        </div>
+      </div>
+
+      <div className="bg-white p-4 shadow rounded-xl">
+        <h2 className="text-lg font-semibold mb-2">Daily Pools</h2>
+        <ul className="space-y-1">
+          <li>Tapping Pool: {stats.pools.tappingPool.toLocaleString()}</li>
+          <li>Social Task Pool: {stats.pools.socialTaskPool.toLocaleString()}</li>
+          <li>Referral Pool: {stats.pools.referralPool.toLocaleString()}</li>
+          <li>Login Pool: {stats.pools.loginPool.toLocaleString()}</li>
+          <li>Presale Pool: {stats.pools.presalePool.toLocaleString()}</li>
+          <li>Total Daily Pool: {stats.pools.totalDaily.toLocaleString()}</li>
+          <li>Last Updated: {stats.pools.lastPoolUpdateDate}</li>
+        </ul>
+      </div>
+
+      <div className="bg-white p-4 shadow rounded-xl">
+        <h2 className="text-lg font-semibold mb-2">Settings</h2>
+        <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
+          {JSON.stringify(stats.settings, null, 2)}
+        </pre>
       </div>
     </div>
   );
