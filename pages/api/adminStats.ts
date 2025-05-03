@@ -1,65 +1,46 @@
 // pages/api/adminStats.ts
-
 import { NextApiRequest, NextApiResponse } from "next";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-
-// Only initialize if not already
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
-
-const db = getFirestore();
+import { prisma } from "@/lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Count total users
-    const usersSnap = await db.collection("users").get();
-    const totalUsers = usersSnap.size;
-
-    // Count total taps
-    const tapsSnap = await db.collection("taps").get();
-    const totalTaps = tapsSnap.size;
-
-    // Sum SHROCK distributed (from user balances)
-    let totalShrock = 0;
-    let totalLoginRewards = 0;
-    let totalReferrals = 0;
-
-    usersSnap.forEach((doc) => {
-      const data = doc.data();
-      totalShrock += data.balance || 0;
-      totalLoginRewards += data.loginReward || 0;
-      totalReferrals += data.referrals || 0;
+    const totalUsers = await prisma.user.count();
+    const totalTaps = await prisma.tap.count();
+    const totalReferrals = await prisma.user.count({
+      where: { referredBy: { not: null } },
     });
 
-    // Pools
-    const poolsDoc = await db.collection("admin").doc("pools").get();
-    const pools = poolsDoc.exists ? poolsDoc.data() : {};
+    const totalLoginRewards = await prisma.reward.aggregate({
+      _sum: { amount: true },
+      where: { type: "LOGIN" },
+    });
+
+    const totalShrock = await prisma.reward.aggregate({
+      _sum: { amount: true },
+    });
+
+    // Get latest pool entry by date
+    const latestPool = await prisma.pool.findFirst({
+      orderBy: { date: "desc" },
+    });
 
     res.status(200).json({
       success: true,
       totalUsers,
       totalTaps,
-      totalShrock,
       totalReferrals,
-      totalLoginRewards,
+      totalLoginRewards: totalLoginRewards._sum.amount || 0,
+      totalShrock: totalShrock._sum.amount || 0,
       pools: {
-        dailyPool: pools?.dailyPool || 0,
-        loginPool: pools?.loginPool || 0,
-        referralPool: pools?.referralPool || 0,
-        socialPool: pools?.socialPool || 0,
-        presalePool: pools?.presalePool || 0,
+        dailyPool: latestPool?.adsEnergyPool || 0,
+        loginPool: latestPool?.loginPool || 0,
+        referralPool: latestPool?.referralPool || 0,
+        socialPool: latestPool?.socialPool || 0,
+        presalePool: latestPool?.presalePool || 0,
       },
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
-    res.status(500).json({ success: false, error: "Failed to load stats" });
+    console.error("Error in /api/adminStats:", error);
+    res.status(500).json({ success: false });
   }
 }
