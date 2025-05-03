@@ -1,14 +1,11 @@
-// pages/admin.tsx
 import React, { useEffect, useState } from 'react';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import app from '../lib/firebase'; // Corrected path
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase'; // Use named import
 
 const AdminDashboard = () => {
-  const db = getFirestore(app);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalTaps, setTotalTaps] = useState(0);
 
-  // Static daily pool values based on your allocation
   const pools = {
     tappingPool: 1_000_000_000,
     socialTaskPool: 666_000_000,
@@ -32,7 +29,7 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-  }, [db]);
+  }, []);
 
   const formatShrock = (value: number) => `${value.toLocaleString()} $SHROCK`;
 
