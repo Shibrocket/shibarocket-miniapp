@@ -14,15 +14,26 @@ export default async function handler(req, res) {
     const refererRef = db.collection("users").doc(refererId);
     const configSnap = await db.collection("settings").doc("config").get();
 
-    const [userSnap, refererSnap] = await Promise.all([userRef.get(), refererRef.get()]);
+    const [userSnap, refererSnap] = await Promise.all([
+      userRef.get(),
+      refererRef.get()
+    ]);
 
     if (!userSnap.exists || !refererSnap.exists) {
-      return res.status(404).json({ success: false, message: "User or referer not found" });
+      return res.status(404).json({ success: false, message: "User or referrer not found" });
+    }
+
+    if (!configSnap.exists) {
+      return res.status(500).json({ success: false, message: "Config not found" });
     }
 
     const userData = userSnap.data();
     const refererData = refererSnap.data();
     const config = configSnap.data();
+
+    if (!userData || !refererData || !config) {
+      return res.status(500).json({ success: false, message: "Invalid data retrieved" });
+    }
 
     if (userData.refererId) {
       return res.status(400).json({ success: false, message: "Referral already applied" });
