@@ -22,7 +22,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const userData = userDoc.data();
-    const completed: string[] = userData?.socialTasksCompleted || [];
+    if (!userData) {
+      return res.status(500).json({ success: false, message: "User data is missing" });
+    }
+
+    const completed: string[] = userData.socialTasksCompleted || [];
 
     if (completed.includes(taskId)) {
       return res.status(400).json({ success: false, message: "Task already completed" });
@@ -33,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await userRef.update({
       socialTasksCompleted: [...completed, taskId],
       shrockEarned: (userData.shrockEarned || 0) + reward,
-      shrock: (userData.shrock || 0) + reward
+      shrock: (userData.shrock || 0) + reward,
     });
 
     return res.status(200).json({
