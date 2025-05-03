@@ -1,54 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase'; // Use named import
+// pages/admin.tsx
+import { useState } from 'react';
+import AdminDashboard from '../components/AdminDashboard';
 
-const AdminDashboard = () => {
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [totalTaps, setTotalTaps] = useState(0);
+export default function AdminPage() {
+  const [authorized, setAuthorized] = useState(false);
+  const [password, setPassword] = useState('');
 
-  const pools = {
-    tappingPool: 1_000_000_000,
-    socialTaskPool: 666_000_000,
-    referralPool: 666_000_000,
-    loginPool: 666_000_000,
-    presalePool: 333_000_000,
-    totalDaily: 3_330_000_000,
+  const handleLogin = () => {
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      setAuthorized(true);
+    } else {
+      alert('Incorrect password');
+    }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      setTotalUsers(usersSnapshot.size);
-
-      let totalTapCount = 0;
-      usersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        totalTapCount += data.totalTaps || 0;
-      });
-      setTotalTaps(totalTapCount);
-    };
-
-    fetchData();
-  }, []);
-
-  const formatShrock = (value: number) => `${value.toLocaleString()} $SHROCK`;
-
-  return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-center">Admin Dashboard</h1>
-      <div className="bg-white shadow-md rounded p-4 space-y-3 text-sm sm:text-base">
-        <p><strong>Total Users:</strong> {totalUsers}</p>
-        <p><strong>Total Taps:</strong> {totalTaps.toLocaleString()} taps</p>
-        <p><strong>Tapping Earnings:</strong> {formatShrock(totalTaps * 5)}</p>
-        <p><strong>Daily Pool:</strong> {formatShrock(pools.totalDaily)}</p>
-        <p><strong>Login Pool:</strong> {formatShrock(pools.loginPool)}</p>
-        <p><strong>Referral Pool:</strong> {formatShrock(pools.referralPool)}</p>
-        <p><strong>Social Task Pool:</strong> {formatShrock(pools.socialTaskPool)}</p>
-        <p><strong>Presale Task Pool:</strong> {formatShrock(pools.presalePool)}</p>
-        <p><strong>Tapping Pool:</strong> {formatShrock(pools.tappingPool)}</p>
+  if (!authorized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h1 className="text-xl font-semibold mb-4">Enter Admin Password</h1>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="border p-2 mb-2 rounded"
+        />
+        <button
+          onClick={handleLogin}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Login
+        </button>
       </div>
-    </div>
-  );
-};
+    );
+  }
 
-export default AdminDashboard;
+  return <AdminDashboard />;
+}
