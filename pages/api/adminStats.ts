@@ -1,7 +1,8 @@
 // pages/api/adminStats.ts
 import { adminDb } from "@/lib/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const usersSnapshot = await adminDb.collection("users").get();
     const totalUsers = usersSnapshot.size;
@@ -9,9 +10,7 @@ export default async function handler(req, res) {
     const tapsSnapshot = await adminDb.collection("taps").get();
     const totalTaps = tapsSnapshot.size;
 
-    // Fetch from pools/dailyPools document (correct path now)
     const poolDoc = await adminDb.collection("pools").doc("dailyPools").get();
-
     const pools = poolDoc.exists ? poolDoc.data() : {};
 
     res.status(200).json({
