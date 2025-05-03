@@ -1,7 +1,10 @@
 import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
 
   try {
     const { userId, taskId } = req.body;
@@ -12,24 +15,25 @@ export default async function handler(req, res) {
 
     const userRef = db.collection("users").doc(userId);
     const configSnap = await db.collection("settings").doc("config").get();
-
     const userDoc = await userRef.get();
+
     if (!userDoc.exists) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const userData = userDoc.data();
-    const completed = userData.socialTasksCompleted || [];
+    const completed: string[] = userData?.socialTasksCompleted || [];
 
     if (completed.includes(taskId)) {
       return res.status(400).json({ success: false, message: "Task already completed" });
     }
 
-    const reward = configSnap.data().socialTaskReward || 20000;
+    const reward = configSnap.exists ? configSnap.data()?.socialTaskReward || 20000 : 20000;
 
     await userRef.update({
       socialTasksCompleted: [...completed, taskId],
       shrockEarned: (userData.shrockEarned || 0) + reward,
+      shrock: (userData.shrock || 0) + reward
     });
 
     return res.status(200).json({
