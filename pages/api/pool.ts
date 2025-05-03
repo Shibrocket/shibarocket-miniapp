@@ -15,11 +15,11 @@ export default async function handler(req: any, res: any) {
     }
 
     const data = poolDocSnap.data();
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
-    let pool = data.pool;
-    let totalTappedToday = data.totalTappedToday;
-    let lastPoolUpdateDate = data.lastPoolUpdateDate;
+    const pool = data.pool;
+    const totalTappedToday = data.totalTappedToday;
+    const lastPoolUpdateDate = data.lastPoolUpdateDate;
 
     if (lastPoolUpdateDate !== today) {
       // Rollover logic
