@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await setDoc(poolDocRef, updatedPools);
     }
 
-    const settingsDocRef = doc(db, 'settings', 'config');
+    const settingsDocRef = doc(db, 'config', 'settings'); // <-- make sure this path matches your Firestore
     const settingsSnapshot = await getDoc(settingsDocRef);
     const settings = settingsSnapshot.exists() ? settingsSnapshot.data() : {};
 
