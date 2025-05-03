@@ -1,6 +1,7 @@
+// pages/admin.tsx
 import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import app from '../app/firebase'; // Adjusted path
+import app from '../lib/firebase'; // Corrected path
 
 const AdminDashboard = () => {
   const db = getFirestore(app);
