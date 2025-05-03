@@ -12,7 +12,6 @@ interface AdminStats {
     totalDaily: number;
     lastPoolUpdateDate: string;
   };
-  settings: any;
 }
 
 export default function AdminDashboard() {
@@ -36,8 +35,9 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) return <div className="p-4">Loading admin stats...</div>;
-
   if (!stats) return <div className="p-4">No data available</div>;
+
+  const { totalUsers, totalTaps, pools } = stats;
 
   return (
     <div className="p-6 space-y-6">
@@ -45,33 +45,26 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-4 shadow rounded-xl">
-          <h2 className="text-lg font-semibold">Users</h2>
-          <p>{stats.totalUsers}</p>
+          <h2 className="text-lg font-semibold">Total Users</h2>
+          <p>{totalUsers}</p>
         </div>
         <div className="bg-white p-4 shadow rounded-xl">
           <h2 className="text-lg font-semibold">Total Taps</h2>
-          <p>{stats.totalTaps}</p>
+          <p>{totalTaps}</p>
         </div>
       </div>
 
       <div className="bg-white p-4 shadow rounded-xl">
-        <h2 className="text-lg font-semibold mb-2">Daily Pools</h2>
+        <h2 className="text-lg font-semibold mb-2">Daily Pool (SHROCK)</h2>
         <ul className="space-y-1">
-          <li>Tapping Pool: {stats.pools.tappingPool.toLocaleString()}</li>
-          <li>Social Task Pool: {stats.pools.socialTaskPool.toLocaleString()}</li>
-          <li>Referral Pool: {stats.pools.referralPool.toLocaleString()}</li>
-          <li>Login Pool: {stats.pools.loginPool.toLocaleString()}</li>
-          <li>Presale Pool: {stats.pools.presalePool.toLocaleString()}</li>
-          <li>Total Daily Pool: {stats.pools.totalDaily.toLocaleString()}</li>
-          <li>Last Updated: {stats.pools.lastPoolUpdateDate}</li>
+          <li>Login Pool: {pools.loginPool?.toLocaleString()} SHROCK</li>
+          <li>Referral Pool: {pools.referralPool?.toLocaleString()} SHROCK</li>
+          <li>Social Task Pool: {pools.socialTaskPool?.toLocaleString()} SHROCK</li>
+          <li>Presale Task Pool: {pools.presalePool?.toLocaleString()} SHROCK</li>
+          <li>Tapping Pool: {pools.tappingPool?.toLocaleString()} SHROCK</li>
+          <li>Total Daily: {pools.totalDaily?.toLocaleString()} SHROCK</li>
+          <li>Last Updated: {pools.lastPoolUpdateDate}</li>
         </ul>
-      </div>
-
-      <div className="bg-white p-4 shadow rounded-xl">
-        <h2 className="text-lg font-semibold mb-2">Settings</h2>
-        <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
-          {JSON.stringify(stats.settings, null, 2)}
-        </pre>
       </div>
     </div>
   );
