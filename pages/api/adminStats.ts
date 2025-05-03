@@ -10,6 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const tapsSnapshot = await adminDb.collection("taps").get();
     const totalTaps = tapsSnapshot.size;
 
+    // FIXED: add .get() to actually retrieve the document
     const poolDoc = await adminDb.collection("pools").doc("dailyPools").get();
     const pools = poolDoc.exists ? poolDoc.data() : {};
 
