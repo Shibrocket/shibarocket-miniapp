@@ -3,10 +3,10 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const AdminDashboard = () => {
+  const [inputPassword, setInputPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalTaps, setTotalTaps] = useState(0);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [inputPassword, setInputPassword] = useState('');
 
   const pools = {
     tappingPool: 1_000_000_000,
@@ -17,34 +17,34 @@ const AdminDashboard = () => {
     totalDaily: 3_330_000_000,
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const fetchData = async () => {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        setTotalUsers(usersSnapshot.size);
-
-        let totalTapCount = 0;
-        usersSnapshot.forEach((doc) => {
-          const data = doc.data();
-          totalTapCount += data.totalTaps || 0;
-        });
-        setTotalTaps(totalTapCount);
-      };
-
-      fetchData();
+  const handleLogin = () => {
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    if (inputPassword === adminPassword) {
+      setIsAuthenticated(true);
+    } else {
+      alert('Incorrect password');
     }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchData = async () => {
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      setTotalUsers(usersSnapshot.size);
+
+      let totalTapCount = 0;
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        totalTapCount += data.totalTaps || 0;
+      });
+      setTotalTaps(totalTapCount);
+    };
+
+    fetchData();
   }, [isAuthenticated]);
 
   const formatShrock = (value: number) => `${value.toLocaleString()} $SHROCK`;
-
-  const handleLogin = () => {
-    const envPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (inputPassword === envPassword) {
-      setIsAuthenticated(true);
-    } else {
-      alert('Incorrect password.');
-    }
-  };
 
   if (!isAuthenticated) {
     return (
