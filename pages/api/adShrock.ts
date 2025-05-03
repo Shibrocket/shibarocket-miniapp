@@ -11,24 +11,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ success: false, message: "Missing userId" });
   }
 
-  const userRef = db.collection("users").doc(userId);
-  const userSnap = await userRef.get();
+  try {
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
 
-  if (!userSnap.exists) {
-    return res.status(404).json({ success: false, message: "User not found" });
+    if (!userSnap.exists) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const current = userSnap.data() || {};
+    const shrockReward = 500;
+
+    await userRef.update({
+      shrock: (current.shrock || 0) + shrockReward,
+      lastAdShrockClaim: Date.now(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Ad watched. +${shrockReward} SHROCK added.`,
+      newShrock: (current.shrock || 0) + shrockReward,
+    });
+  } catch (error) {
+    console.error("Ad claim error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
-
-  const current = userSnap.data() || {};
-  const shrockReward = 500;
-
-  await userRef.update({
-    shrock: (current.shrock || 0) + shrockReward,
-    lastAdShrockClaim: Date.now()
-  });
-
-  return res.status(200).json({
-    success: true,
-    message: `Ad watched. +${shrockReward} SHROCK added.`,
-    newShrock: (current.shrock || 0) + shrockReward
-  });
 }
