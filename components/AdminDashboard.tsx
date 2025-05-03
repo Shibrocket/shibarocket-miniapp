@@ -1,3 +1,5 @@
+k'use client';
+
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -17,34 +19,33 @@ const AdminDashboard = () => {
     totalDaily: 3_330_000_000,
   };
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchData = async () => {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        setTotalUsers(usersSnapshot.size);
+
+        let totalTapCount = 0;
+        usersSnapshot.forEach((doc) => {
+          const data = doc.data();
+          totalTapCount += data.totalTaps || 0;
+        });
+        setTotalTaps(totalTapCount);
+      };
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  const formatShrock = (value: number) => `${value.toLocaleString()} $SHROCK`;
+
   const handleLogin = () => {
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (inputPassword === adminPassword) {
+    const correctPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    if (inputPassword === correctPassword) {
       setIsAuthenticated(true);
     } else {
       alert('Incorrect password');
     }
   };
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const fetchData = async () => {
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      setTotalUsers(usersSnapshot.size);
-
-      let totalTapCount = 0;
-      usersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        totalTapCount += data.totalTaps || 0;
-      });
-      setTotalTaps(totalTapCount);
-    };
-
-    fetchData();
-  }, [isAuthenticated]);
-
-  const formatShrock = (value: number) => `${value.toLocaleString()} $SHROCK`;
 
   if (!isAuthenticated) {
     return (
@@ -86,3 +87,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
