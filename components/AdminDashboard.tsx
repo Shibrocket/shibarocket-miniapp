@@ -21,15 +21,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetch("/api/adminStats")
       .then((res) => res.json())
-      .then((data) => setStats(data));
+      .then((data) => setStats(data))
+      .catch((err) => console.error("Failed to fetch stats:", err));
   }, []);
 
-  if (!stats) return <p>Loading...</p>;
+  if (!stats) return <p className="p-6">Loading...</p>;
 
   return (
     <div className="p-6 flex flex-col items-center">
       <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md space-y-2">
         <p><strong>Total Users:</strong> {stats.totalUsers}</p>
         <p><strong>Total Taps:</strong> {stats.totalTaps}</p>
         <p><strong>Tapping Pool:</strong> {stats.pools.tappingPool?.toLocaleString() ?? 0} SHROCK</p>
