@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
-const AdminDashboard = ({ telegramUserId }) => {
+const AdminDashboard = () => {
+  const [telegramUserId, setTelegramUserId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -21,9 +22,20 @@ const AdminDashboard = ({ telegramUserId }) => {
   };
 
   useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    const id = tg?.initDataUnsafe?.user?.id;
+
+    if (!id) {
+      console.warn('No Telegram ID found.');
+      setLoading(false);
+      return;
+    }
+
+    setTelegramUserId(id);
+
     const checkAdminAndFetchStats = async () => {
       try {
-        const adminRef = doc(db, 'admins', telegramUserId.toString());
+        const adminRef = doc(db, 'admins', id.toString());
         const adminSnap = await getDoc(adminRef);
 
         if (adminSnap.exists() && adminSnap.data().isAdmin === true) {
@@ -47,7 +59,7 @@ const AdminDashboard = ({ telegramUserId }) => {
     };
 
     checkAdminAndFetchStats();
-  }, [telegramUserId]);
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (!isAdmin) return <p>Access denied. You are not an admin.</p>;
