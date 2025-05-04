@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   try {
     const userId = req.headers["x-user-id"] || req.query.userId;
-    if (!userId) return res.status(400).json({ success: false, message: "User ID is required" });
+    if (!userId) return res.status(400).json({ success: false, message: "Missing user ID" });
 
     const userRef = db.collection("users").doc(userId);
     const userSnap = await userRef.get();
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
     const configSnap = await db.collection("settings").doc("config").get();
     const config = configSnap.data();
-    const boostAmount = config.adsEnergyReward || 100;
+    const boostAmount = config?.adsEnergyReward ?? 100; // Safe fallback
 
     await userRef.update({
       boostedEnergy: boostAmount,
@@ -25,6 +25,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Boost error:", error);
-    return res.status(500).json({ success: false, message: "Server error during boost" });
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
