@@ -24,6 +24,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ success: false, message: "Invalid user data" });
     }
 
+    const configData = configSnap.data();
+    if (!configData) {
+      return res.status(500).json({ success: false, message: "Missing config settings" });
+    }
+
     const alreadyDoneField = type === "reminder" ? "presaleReminderSet" : "quizCompleted";
     if (userData[alreadyDoneField]) {
       return res.status(400).json({ success: false, message: `You already completed ${type}` });
@@ -31,8 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const reward =
       type === "reminder"
-        ? configSnap.data().presaleReminderReward || 50000
-        : configSnap.data().quizReward || 100000;
+        ? configData.presaleReminderReward || 50000
+        : configData.quizReward || 100000;
 
     await userRef.update({
       [alreadyDoneField]: true,
