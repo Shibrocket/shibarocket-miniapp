@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { db } from "../../lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../utils/firebaseAdmin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -8,27 +7,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const poolRef = doc(db, "config", "pool");
-    const poolSnap = await getDoc(poolRef);
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const todayPoolSnap = await db.collection("dailyPools").doc(today).get();
 
-    if (!poolSnap.exists()) {
-      return res.status(404).json({ message: "Daily Pool not found" });
+    if (!todayPoolSnap.exists) {
+      return res.status(404).json({ message: "Today's pool not found" });
     }
 
-    const { dailyPool, lastUpdate } = poolSnap.data();
-    const untapped = dailyPool ?? 0;
+    const { total = 0, claimed = 0 } = todayPoolSnap.data();
+    const untapped = total - claimed;
 
-    // Reset for new day
-    const newDailyPool = 1000000000 + untapped; // 1 Billion + leftover
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 1);
+    const nextDay = nextDate.toISOString().slice(0, 10);
 
-    await setDoc(poolRef, {
-      dailyPool: newDailyPool,
-      lastUpdate: new Date(),
+    const newTotal = 1_000_000_000 + untapped;
+
+    await db.collection("dailyPools").doc(nextDay).set({
+      total: newTotal,
+      claimed: 0,
     });
 
-    res.status(200).json({ message: "Rollover successful", newDailyPool });
+    res.status(200).json({ message: "Rollover successful", newDailyPool: newTotal });
   } catch (error) {
-    console.error(error);
+    console.error("Rollover error:", error);
     res.status(500).json({ message: "Rollover failed" });
   }
 }

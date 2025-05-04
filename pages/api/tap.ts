@@ -19,24 +19,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const settingsDoc = await db.collection('settings').doc('config').get();
-    const settings = settingsDoc.data();
-
+    const settingsSnap = await db.collection('settings').doc('config').get();
+    const settings = settingsSnap.data();
     if (!settings) {
       return res.status(500).json({ error: 'Settings not found' });
     }
 
-    const user = userDoc.data();
-    const currentEnergy = user?.energy || 0;
-    const maxEnergy = settings.maxEnergyWithBoost || 500;
+    const userData = userDoc.data() || {};
+    const currentEnergy = userData.energy ?? 0;
+    const maxEnergy = settings.maxEnergyWithBoost ?? 500;
 
     if (currentEnergy <= 0) {
       return res.status(400).json({ message: 'No energy left. Please wait or boost.' });
     }
 
-    const earned = (settings.tapReward || 5);
+    const earned = settings.tapReward ?? 5;
     const newEnergy = currentEnergy - 1;
-    const newTotal = (user?.shrockEarned || 0) + earned;
+    const newTotal = (userData.shrockEarned ?? 0) + earned;
 
     await userRef.update({
       energy: newEnergy,
@@ -47,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Tap successful',
       earned,
       newEnergy,
-      totalEarned: newTotal
+      totalEarned: newTotal,
     });
 
   } catch (error: any) {

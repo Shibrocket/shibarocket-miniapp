@@ -1,19 +1,27 @@
-import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { db } from '../../utils/firebaseAdmin';
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
 
   try {
-    const userId = req.headers["x-user-id"] || req.query.userId;
-    if (!userId) return res.status(400).json({ success: false, message: "Missing user ID" });
+    const userId = req.headers['x-user-id'] as string || req.query.userId as string;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'Missing user ID' });
+    }
 
-    const userRef = db.collection("users").doc(userId);
+    const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
-    if (!userSnap.exists) return res.status(404).json({ success: false, message: "User not found" });
 
-    const configSnap = await db.collection("settings").doc("config").get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const configSnap = await db.collection('settings').doc('config').get();
     const config = configSnap.data();
-    const boostAmount = config?.adsEnergyReward ?? 100; // Safe fallback
+    const boostAmount = config?.adsEnergyReward ?? 100;
 
     await userRef.update({
       boostedEnergy: boostAmount,
@@ -22,9 +30,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: `Boost applied: +${boostAmount} energy`,
+      boostedEnergy: boostAmount,
     });
-  } catch (error) {
-    console.error("Boost error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+  } catch (error: any) {
+    console.error('Boost error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
   }
 }

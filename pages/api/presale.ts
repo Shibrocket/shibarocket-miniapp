@@ -1,7 +1,10 @@
+import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "../../utils/firebaseAdmin";
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
 
   const { userId, action } = req.body;
 
@@ -9,27 +12,36 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "Missing userId or action" });
   }
 
-  const userRef = db.collection("users").doc(userId);
-  const configSnap = await db.collection("settings").doc("config").get();
-
   try {
+    const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
+
     if (!userDoc.exists) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const configSnap = await db.collection("settings").doc("config").get();
+    const config = configSnap.data();
+    if (!config) {
+      return res.status(500).json({ success: false, message: "Settings not found" });
+    }
+
     const userData = userDoc.data();
+    if (!userData) {
+      return res.status(500).json({ success: false, message: "User data missing" });
+    }
+
     let updateData = {};
     let reward = 0;
 
     if (action === "reminder" && !userData.presaleReminderSet) {
-      reward = configSnap.data().presaleReminderReward || 50000;
+      reward = config.presaleReminderReward ?? 50000;
       updateData = {
         presaleReminderSet: true,
         shrockEarned: (userData.shrockEarned || 0) + reward,
       };
     } else if (action === "quiz" && !userData.quizCompleted) {
-      reward = configSnap.data().quizReward || 100000;
+      reward = config.quizReward ?? 100000;
       updateData = {
         quizCompleted: true,
         shrockEarned: (userData.shrockEarned || 0) + reward,
@@ -44,8 +56,8 @@ export default async function handler(req, res) {
       success: true,
       message: `You earned ${reward} $SHROCK for ${action}`,
     });
-  } catch (error) {
-    console.error("Presale error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    console.error("Presale task error:", error);
+    return res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 }
