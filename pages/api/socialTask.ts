@@ -1,6 +1,7 @@
+import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "../../utils/firebaseAdmin";
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
   try {
@@ -11,21 +12,26 @@ export default async function handler(req, res) {
     }
 
     const userRef = db.collection("users").doc(userId);
-    const configSnap = await db.collection("settings").doc("config").get();
-
     const userDoc = await userRef.get();
+
     if (!userDoc.exists) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const userData = userDoc.data();
+    if (!userData) {
+      return res.status(500).json({ success: false, message: "User data missing" });
+    }
+
     const completed = userData.socialTasksCompleted || [];
 
     if (completed.includes(taskId)) {
       return res.status(400).json({ success: false, message: "Task already completed" });
     }
 
-    const reward = configSnap.data().socialTaskReward || 20000;
+    const configSnap = await db.collection("settings").doc("config").get();
+    const configData = configSnap.data();
+    const reward = (configData?.socialTaskReward as number) || 20000;
 
     await userRef.update({
       socialTasksCompleted: [...completed, taskId],
