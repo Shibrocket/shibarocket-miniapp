@@ -4,6 +4,7 @@ import { db } from '../../utils/firebaseAdmin';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const testRef = db.collection('test').doc('connection-check');
+
     await testRef.set({
       message: 'Firestore connection successful!',
       timestamp: new Date().toISOString(),
