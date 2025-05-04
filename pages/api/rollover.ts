@@ -14,7 +14,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: "Today's pool not found" });
     }
 
-    const { total = 0, claimed = 0 } = todayPoolSnap.data();
+    // SAFE destructuring
+    const todayData = todayPoolSnap.data();
+    const { total = 0, claimed = 0 } = todayData || {};
     const untapped = total - claimed;
 
     const nextDate = new Date();
@@ -28,7 +30,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       claimed: 0,
     });
 
-    res.status(200).json({ message: "Rollover successful", newDailyPool: newTotal });
+    res.status(200).json({
+      message: "Rollover successful",
+      newDailyPool: { date: nextDay, total: newTotal, claimed: 0 },
+    });
   } catch (error) {
     console.error("Rollover error:", error);
     res.status(500).json({ message: "Rollover failed" });
