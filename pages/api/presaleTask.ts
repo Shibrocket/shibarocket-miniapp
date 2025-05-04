@@ -1,3 +1,5 @@
+// pages/api/presaleTask.ts
+
 import { db } from "../../utils/firebaseAdmin";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -12,7 +14,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const userRef = db.collection("users").doc(userId);
-    const configSnap = await db.collection("settings").doc("config").get();
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
@@ -21,34 +22,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userData = userSnap.data();
     if (!userData) {
-      return res.status(500).json({ success: false, message: "Invalid user data" });
+      return res.status(500).json({ success: false, message: "Failed to read user data" });
     }
 
-    const configData = configSnap.data();
-    if (!configData) {
-      return res.status(500).json({ success: false, message: "Missing config settings" });
+    if (type === "reminder" && userData.presaleReminderCompleted) {
+      return res.status(400).json({ success: false, message: "Reminder already completed" });
     }
 
-    const alreadyDoneField = type === "reminder" ? "presaleReminderSet" : "quizCompleted";
-    if (userData[alreadyDoneField]) {
-      return res.status(400).json({ success: false, message: `You already completed ${type}` });
+    if (type === "quiz" && userData.presaleQuizCompleted) {
+      return res.status(400).json({ success: false, message: "Quiz already completed" });
     }
+
+    const configSnap = await db.collection("settings").doc("config").get();
+    const config = configSnap.exists ? configSnap.data() : {};
 
     const reward =
       type === "reminder"
-        ? configData.presaleReminderReward || 50000
-        : configData.quizReward || 100000;
+        ? config?.presaleReminderReward || 50000
+        : config?.quizReward || 100000;
 
     await userRef.update({
-      [alreadyDoneField]: true,
       shrockEarned: (userData.shrockEarned || 0) + reward,
+      ...(type === "reminder" ? { presaleReminderCompleted: true } : {}),
+      ...(type === "quiz" ? { presaleQuizCompleted: true } : {}),
     });
 
     return res.status(200).json({
       success: true,
-      message: `${type === "reminder" ? "Reminder set" : "Quiz completed"}! You earned ${reward} $SHROCK.`,
+      message: `${type === "reminder" ? "Reminder" : "Quiz"} completed! You earned ${reward} $SHROCK.`,
     });
-
   } catch (error) {
     console.error("Presale task error:", error);
     return res.status(500).json({ success: false, message: "Server error" });

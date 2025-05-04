@@ -1,14 +1,14 @@
 // pages/api/refer.ts
 
 import { db } from "../../utils/firebaseAdmin";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
   try {
     const { userId, refererId } = req.body;
 
-    // Check for missing or invalid input
     if (!userId || !refererId || userId === refererId) {
       return res.status(400).json({ success: false, message: "Invalid user or referer ID" });
     }
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const [userSnap, refererSnap, configSnap] = await Promise.all([
       userRef.get(),
       refererRef.get(),
-      db.collection("settings").doc("config").get()
+      db.collection("settings").doc("config").get(),
     ]);
 
     if (!userSnap.exists || !refererSnap.exists) {
@@ -27,29 +27,34 @@ export default async function handler(req, res) {
     }
 
     const userData = userSnap.data();
+    const refererData = refererSnap.data();
+    const config = configSnap.exists ? configSnap.data() : {};
+
+    if (!userData) {
+      return res.status(500).json({ success: false, message: "Failed to read user data" });
+    }
+
     if (userData.refererId) {
       return res.status(400).json({ success: false, message: "Referral already claimed" });
     }
 
-    const config = configSnap.data();
-    const referrerReward = config.referralRewardReferrer || 70000;
-    const refereeReward = config.referralRewardReferee || 30000;
+    const referrerReward = config?.referralRewardReferrer || 70000;
+    const refereeReward = config?.referralRewardReferee || 30000;
 
-    // Apply rewards
     await Promise.all([
       userRef.update({
         refererId,
-        shrockEarned: (userData.shrockEarned || 0) + refereeReward
+        shrockEarned: (userData.shrockEarned || 0) + refereeReward,
       }),
       refererRef.update({
-        referrals: (refererSnap.data().referrals || 0) + 1,
-        shrockEarned: (refererSnap.data().shrockEarned || 0) + referrerReward
-      })
+        referrals: (refererData?.referrals || 0) + 1,
+        shrockEarned: (refererData?.shrockEarned || 0) + referrerReward,
+      }),
     ]);
 
     return res.status(200).json({
       success: true,
-      message: `Referral complete! Referrer +${referrerReward}, You +${refereeReward} $SHROCK`
+      message: `Referral complete! Referrer +${referrerReward}, You +${refereeReward}`,
     });
   } catch (error) {
     console.error("Referral error:", error);
