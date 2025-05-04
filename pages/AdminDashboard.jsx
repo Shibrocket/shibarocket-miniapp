@@ -1,9 +1,15 @@
-import React from 'react';
+'use client';
 
-const AdminDashboard = () => {
-  // Static values for now
-  const totalUsers = 0; // Replace with actual if needed
-  const totalTaps = 0;  // Replace with actual if needed
+import React, { useEffect, useState } from 'react';
+import { db } from '../firebase';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+
+const AdminDashboard = ({ telegramUserId }) => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalTaps, setTotalTaps] = useState(0);
+
   const pools = {
     tappingPool: 1000000000,
     loginPool: 666000000,
@@ -13,6 +19,38 @@ const AdminDashboard = () => {
     totalDaily: 3330000000,
     lastPoolUpdateDate: "2025-05-03",
   };
+
+  useEffect(() => {
+    const checkAdminAndFetchStats = async () => {
+      try {
+        const adminRef = doc(db, 'admins', telegramUserId.toString());
+        const adminSnap = await getDoc(adminRef);
+
+        if (adminSnap.exists() && adminSnap.data().isAdmin === true) {
+          setIsAdmin(true);
+
+          const usersSnap = await getDocs(collection(db, 'users'));
+          setTotalUsers(usersSnap.size);
+
+          const tapsSnap = await getDocs(collection(db, 'taps'));
+          let total = 0;
+          tapsSnap.forEach(doc => {
+            total += doc.data().tapCount || 0;
+          });
+          setTotalTaps(total);
+        }
+      } catch (err) {
+        console.error('Error fetching admin status or stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminAndFetchStats();
+  }, [telegramUserId]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!isAdmin) return <p>Access denied. You are not an admin.</p>;
 
   return (
     <div className="p-4">
