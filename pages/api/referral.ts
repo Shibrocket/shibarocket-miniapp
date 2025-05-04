@@ -2,7 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "../../utils/firebaseAdmin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
 
   try {
     const { userId, refererId } = req.body;
@@ -21,12 +23,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ]);
 
     if (!userSnap.exists || !refererSnap.exists) {
-      return res.status(404).json({ success: false, message: "User or referrer not found" });
+      return res.status(404).json({ success: false, message: "User or referer not found" });
     }
 
     const userData = userSnap.data();
     const refererData = refererSnap.data();
     const config = configSnap.data();
+
+    if (!userData || !refererData) {
+      return res.status(500).json({ success: false, message: "Missing user or referer data" });
+    }
 
     if (userData.refererId) {
       return res.status(400).json({ success: false, message: "Referral already claimed" });
@@ -48,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      message: `Referral successful! You earned ${refereeReward} $SHROCK. Referrer earned ${referrerReward} $SHROCK.`
+      message: `Referral successful! You earned ${refereeReward} $SHROCK.`
     });
 
   } catch (error: any) {
