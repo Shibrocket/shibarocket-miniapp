@@ -8,7 +8,6 @@ export default function Home() {
   const [energy, setEnergy] = useState(400);
   const [shrockEarned, setShrockEarned] = useState(0);
   const [lastLoginDate, setLastLoginDate] = useState<string>("");
-  const [countdown, setCountdown] = useState<string>("");
   const [tasks, setTasks] = useState<any[]>([]);
 
   const userId =
@@ -19,28 +18,6 @@ export default function Home() {
 
   const presaleDate = new Date("2025-05-20T00:00:00Z");
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      const distance = presaleDate.getTime() - now.getTime();
-
-      if (distance <= 0) {
-        setCountdown("Presale is live!");
-        clearInterval(interval);
-      } else {
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((distance / (1000 * 60)) % 60);
-        const seconds = Math.floor((distance / 1000) % 60);
-
-        setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Load social tasks from Firebase
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -129,10 +106,10 @@ export default function Home() {
   };
 
   return (
-    <div style={{ 
-      textAlign: "center", 
-      marginTop: "30px", 
-      fontFamily: "Arial, sans-serif", 
+    <div style={{
+      textAlign: "center",
+      marginTop: "30px",
+      fontFamily: "Arial, sans-serif",
       backgroundColor: "#f5f7fa",
       minHeight: "100vh",
       padding: "20px"
@@ -142,9 +119,9 @@ export default function Home() {
       </h1>
 
       <div style={{ margin: "20px", fontSize: "20px", color: "#333" }}>
-       <strong>Presale Countdown:</strong>
-       <Countdown date={new Date("2025-05-20T00:00:00Z")} /> 
-       <div style={{ fontSize: "16px", color: "#777", marginTop: "5px" }}>
+        <strong>Presale Countdown:</strong>
+        <Countdown date={presaleDate} />
+        <div style={{ fontSize: "16px", color: "#777", marginTop: "5px" }}>
           Get ready for the $SHROCK Presale!
         </div>
       </div>
@@ -157,38 +134,30 @@ export default function Home() {
       </h2>
 
       <div style={{ marginTop: "30px" }}>
-        <button 
-          onClick={handleTap} 
-          style={{
-            fontSize: "24px",
-            padding: "12px 32px",
-            margin: "10px",
-            backgroundColor: "#28a745",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px"
-          }}
+        <button
+          onClick={handleTap}
+          style={buttonStyle("#28a745")}
         >
           TAP
         </button>
       </div>
 
       <div style={{ marginTop: "20px" }}>
-        <button 
+        <button
           onClick={handleWatchAd}
           style={buttonStyle("#007bff")}
         >
           Watch Ad for +100 Energy
         </button>
 
-        <button 
+        <button
           onClick={handleDailyLogin}
           style={buttonStyle("#ffc107", "#000")}
         >
           Daily Login Reward
         </button>
 
-        <button 
+        <button
           onClick={handleClaim}
           style={buttonStyle("#6f42c1")}
         >
@@ -196,7 +165,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Dynamic Social Tasks */}
       <div style={{ marginTop: "40px" }}>
         <h3 style={{ marginBottom: "10px", color: "#2c3e50" }}>Complete Social Tasks:</h3>
         {tasks.map((task, index) => (
@@ -209,6 +177,25 @@ export default function Home() {
           </button>
         ))}
       </div>
+
+      {userId !== "guestUser" && (
+        <div style={{ marginTop: "40px" }}>
+          <a
+            href={`/adminDashboard?userId=${userId}`}
+            style={{
+              display: "inline-block",
+              padding: "12px 24px",
+              backgroundColor: "#dc3545",
+              color: "#fff",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "bold",
+            }}
+          >
+            Admin Dashboard
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -217,10 +204,10 @@ export default function Home() {
 const buttonStyle = (backgroundColor: string, color = "#fff") => ({
   fontSize: "18px",
   padding: "10px 20px",
-  margin: "8px",
+  margin: "10px",
   backgroundColor,
   color,
   border: "none",
-  borderRadius: "6px",
+  borderRadius: "8px",
+  cursor: "pointer"
 });
-
