@@ -13,7 +13,6 @@ export default function MainPage() {
   const [energy, setEnergy] = useState(0);
   const [earned, setEarned] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [hasWatchedAd, setHasWatchedAd] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -23,14 +22,12 @@ export default function MainPage() {
         const data = docSnap.data();
         setEnergy(data.energy || 0);
         setEarned(data.earned || 0);
-        setHasWatchedAd(data.hasWatchedAd === true); // check if ad was watched
       }
 
       const adminRef = doc(db, "admins", userId);
       const adminSnap = await getDoc(adminRef);
-      if (adminSnap.exists()) {
-        const adminData = adminSnap.data();
-        if (adminData.isAdmin) setIsAdmin(true);
+      if (adminSnap.exists() && adminSnap.data().isAdmin) {
+        setIsAdmin(true);
       }
     };
 
@@ -38,7 +35,7 @@ export default function MainPage() {
   }, [userId]);
 
   const handleTap = async () => {
-    if (energy <= 0) return;
+    if (energy <= 0 || energy > 500) return;
 
     const newEnergy = energy - 1;
     const newEarned = earned + 5;
@@ -53,24 +50,22 @@ export default function MainPage() {
     });
   };
 
-  const handleWatchAd = async () => {
-    if (hasWatchedAd) return;
+  const handleAdWatch = async () => {
+    if (energy >= 500) return;
 
-    const newEnergy = energy + 100;
+    const bonus = energy + 100 > 500 ? 500 - energy : 100;
+    const newEnergy = energy + bonus;
+
     setEnergy(newEnergy);
-    setHasWatchedAd(true);
 
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      energy: newEnergy,
-      hasWatchedAd: true,
-    });
+    await updateDoc(userRef, { energy: newEnergy });
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ padding: 20, fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
       <h1 style={{ color: '#ff4500' }}>ShibaRocket Mini App</h1>
-      <h3>Presale Countdown:<span style={{ marginLeft: 10 }}>15:00:10:50</span></h3>
+      <h3>Presale Countdown: <span style={{ marginLeft: 10 }}>15:00:10:50</span></h3>
       <p>Get ready for the $SHROCK Presale!</p>
 
       <h2>Energy: {energy} / 500</h2>
@@ -78,31 +73,34 @@ export default function MainPage() {
 
       <button
         onClick={handleTap}
+        disabled={energy <= 0}
         style={{
-          backgroundColor: 'green',
+          backgroundColor: energy > 0 ? 'green' : 'gray',
           color: 'white',
           padding: 10,
           fontSize: 18,
           borderRadius: 5,
           marginTop: 10,
+          width: 150,
         }}
-        disabled={energy <= 0}
       >
         TAP
       </button>
 
       <div style={{ marginTop: 20 }}>
         <button
-          onClick={handleWatchAd}
+          onClick={handleAdWatch}
+          disabled={energy >= 500}
           style={{
-            backgroundColor: hasWatchedAd ? 'gray' : '#007bff',
+            backgroundColor: energy < 500 ? '#6c757d' : 'gray',
             color: 'white',
             padding: 10,
             borderRadius: 5,
+            marginTop: 10,
+            width: 220,
           }}
-          disabled={hasWatchedAd}
         >
-          {hasWatchedAd ? 'Ad Watched (+100 Energy)' : 'Watch Ad for +100 Energy'}
+          Ad Watched (+100 Energy)
         </button>
         <br />
         <button style={{ backgroundColor: 'orange', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}>
