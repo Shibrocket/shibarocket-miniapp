@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, doc, getDoc, getFirestore } from 'firebase/firestore';
+import { collection, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-
-const db = getFirestore(app);
 
 export default function MainPage({ searchParams }: { searchParams: URLSearchParams }) {
   const userId = searchParams.get("userId") || "7684906960"; // fallback test ID
