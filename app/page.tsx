@@ -7,9 +7,18 @@ export default function Page() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    alert("useEffect ran");
+
     const tg = (window as any).Telegram?.WebApp;
+    alert("Telegram WebApp: " + JSON.stringify(tg));
+
     if (tg?.initDataUnsafe?.user?.id) {
-      setUserId(tg.initDataUnsafe.user.id.toString());
+      const id = tg.initDataUnsafe.user.id.toString();
+      alert("User ID found: " + id);
+      setUserId(id);
+    } else {
+      alert("Telegram user ID not found! Using test user ID.");
+      setUserId("7684906960"); // fallback for local testing
     }
   }, []);
 
