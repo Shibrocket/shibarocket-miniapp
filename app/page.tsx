@@ -1,20 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/app/firebaseConfig';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
-export default function MainPage({ searchParams }: { searchParams: URLSearchParams }) {
-  const userId = searchParams.get("userId") || "7684906960"; // fallback test ID
+export default function MainPage() {
+  const searchParams = useSearchParams();
+  const userId = searchParams.get("userId") || "7684906960";
+
   const [energy, setEnergy] = useState(0);
   const [earned, setEarned] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!userId) return;
-
       const userRef = doc(db, "users", userId);
       const docSnap = await getDoc(userRef);
       if (docSnap.exists()) {
@@ -36,13 +37,12 @@ export default function MainPage({ searchParams }: { searchParams: URLSearchPara
 
   const handleTap = () => {
     setEnergy((prev) => Math.max(0, prev - 1));
-    setEarned((prev) => prev + 5); // Example logic
+    setEarned((prev) => prev + 5);
   };
 
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
       <h1 style={{ color: '#ff4500' }}>ShibaRocket Mini App</h1>
-
       <h3>Presale Countdown:<span style={{ marginLeft: 10 }}>15:00:10:50</span></h3>
       <p>Get ready for the $SHROCK Presale!</p>
 
@@ -64,15 +64,15 @@ export default function MainPage({ searchParams }: { searchParams: URLSearchPara
       </button>
 
       <div style={{ marginTop: 20 }}>
-        <button style={{ backgroundColor: '#007bff', color: 'white', padding: 10, borderRadius: 5, marginBottom: 10 }}>
+        <button style={{ backgroundColor: '#007bff', color: 'white', padding: 10, borderRadius: 5 }}>
           Watch Ad for +100 Energy
         </button>
         <br />
-        <button style={{ backgroundColor: 'orange', color: 'white', padding: 10, borderRadius: 5, marginBottom: 10 }}>
+        <button style={{ backgroundColor: 'orange', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}>
           Daily Login Reward
         </button>
         <br />
-        <button style={{ backgroundColor: 'purple', color: 'white', padding: 10, borderRadius: 5 }}>
+        <button style={{ backgroundColor: 'purple', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}>
           Claim $SHROCK
         </button>
       </div>
