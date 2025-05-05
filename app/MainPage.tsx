@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
 import Link from 'next/link';
 import { doc, getDoc, updateDoc, setDoc, increment } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '@/lib/firebase';
 
 export default function MainPage({ userId }) {
   const [energy, setEnergy] = useState(0);

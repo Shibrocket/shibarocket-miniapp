@@ -1,3 +1,9 @@
+
+# Ignore old key
+shrock-airdrop-setup/serviceAccountKey.json
+
+# Ignore new key
+lib/serviceaccount.json
 .vercel
 .env
-shrock-airdrop-setup/serviceAccountKey.json
+
