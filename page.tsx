@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db } from './firebaseConfig';
 import Link from 'next/link';
 
 export default function MainPage({ searchParams }: { searchParams: URLSearchParams }) {
