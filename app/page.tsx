@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 
 export default function MainPage() {
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId") || "7684906960";
+  const userId = searchParams?.get("userId") || "7684906960";
 
   const [energy, setEnergy] = useState(0);
   const [earned, setEarned] = useState(0);
