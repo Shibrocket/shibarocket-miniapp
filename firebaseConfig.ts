@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -11,7 +11,8 @@ const firebaseConfig = {
   measurementId: "G-WCJ6BDXNSP"
 };
 
-const app = initializeApp(firebaseConfig);
+// Fix: Only initialize if not already initialized
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
 export { app, db };
