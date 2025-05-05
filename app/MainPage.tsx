@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
@@ -24,6 +24,8 @@ export default function MainPage({ userId }) {
   const getToday = () => new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
+    if (!userId) return;
+
     const fetchData = async () => {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
@@ -103,7 +105,7 @@ export default function MainPage({ userId }) {
     const today = getToday();
     if (loginRewardClaimed) return;
 
-    const reward = 500; // Adjust if using streaks
+    const reward = 500; // Adjust for streak logic if needed
 
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
@@ -125,8 +127,8 @@ export default function MainPage({ userId }) {
     const reward = 20000;
 
     if (!pool || pool.remaining < reward) {
-  return alert("Presale task rewards are finished!");  
-  }
+      return alert("Social task rewards are finished!");
+    }
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
@@ -148,7 +150,9 @@ export default function MainPage({ userId }) {
 
     const reward = 75000;
 
-    if (pool.remaining < reward) return alert("Presale task rewards are finished!");
+    if (!pool || pool.remaining < reward) {
+      return alert("Presale rewards are finished!");
+    }
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
@@ -171,6 +175,10 @@ export default function MainPage({ userId }) {
     setEarned((prev) => prev + 30000);
     setReferralRewardClaimed(true);
   };
+
+  if (!userId) {
+    return <div>Loading user data...</div>;
+  }
 
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
