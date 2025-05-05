@@ -124,7 +124,9 @@ export default function MainPage({ userId }) {
 
     const reward = 20000;
 
-    if (!pool || pool.remaining < reward) return alert("Today's social task rewards are finished!");
+    if (!pool || pool.remaining < reward) {
+  return alert("Presale task rewards are finished!");  
+  }
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
