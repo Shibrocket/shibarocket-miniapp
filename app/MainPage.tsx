@@ -27,9 +27,9 @@ export default function MainPage({ userId }) {
     if (!userId) return;
 
     const fetchData = async () => {
+      const today = getToday();
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
-      const today = getToday();
 
       if (userSnap.exists()) {
         const data = userSnap.data();
@@ -105,7 +105,7 @@ export default function MainPage({ userId }) {
     const today = getToday();
     if (loginRewardClaimed) return;
 
-    const reward = 500; // Adjust for streak logic if needed
+    const reward = 500; // Basic reward; you can extend to streak later
 
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
@@ -125,7 +125,6 @@ export default function MainPage({ userId }) {
     const pool = poolSnap.data();
 
     const reward = 20000;
-
     if (!pool || pool.remaining < reward) {
       return alert("Social task rewards are finished!");
     }
@@ -149,7 +148,6 @@ export default function MainPage({ userId }) {
     const pool = poolSnap.data();
 
     const reward = 75000;
-
     if (!pool || pool.remaining < reward) {
       return alert("Presale rewards are finished!");
     }
@@ -176,9 +174,7 @@ export default function MainPage({ userId }) {
     setReferralRewardClaimed(true);
   };
 
-  if (!userId) {
-    return <div>Loading user data...</div>;
-  }
+  if (!userId) return <div>Loading user data...</div>;
 
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
@@ -198,12 +194,15 @@ export default function MainPage({ userId }) {
       </h3>
 
       <h2>Energy: {energy} / {getMaxEnergy()}</h2>
-      <h2>Earned: {earned} $SHROCK</h2>
+      <h2>Earned: {earned.toLocaleString()} $SHROCK</h2>
 
       <button
         onClick={handleTap}
         disabled={energy >= getMaxEnergy()}
-        style={{ backgroundColor: energy < getMaxEnergy() ? 'green' : 'gray', color: 'white', padding: 10, fontSize: 18, borderRadius: 5, marginTop: 10, width: 150 }}
+        style={{
+          backgroundColor: energy < getMaxEnergy() ? 'green' : 'gray',
+          color: 'white', padding: 10, fontSize: 18, borderRadius: 5, marginTop: 10, width: 150
+        }}
       >
         TAP
       </button>
@@ -212,7 +211,10 @@ export default function MainPage({ userId }) {
         <button
           onClick={handleAdWatch}
           disabled={adsWatched || energy >= MAX_ENERGY}
-          style={{ backgroundColor: !adsWatched && energy < MAX_ENERGY ? '#6c757d' : 'gray', color: 'white', padding: 10, borderRadius: 5, marginTop: 10, width: 220 }}
+          style={{
+            backgroundColor: !adsWatched && energy < MAX_ENERGY ? '#6c757d' : 'gray',
+            color: 'white', padding: 10, borderRadius: 5, marginTop: 10, width: 220
+          }}
         >
           {adsWatched ? 'Ad Watched (+100 Energy)' : 'Watch Ad for +100 Energy'}
         </button>
@@ -221,7 +223,10 @@ export default function MainPage({ userId }) {
         <button
           onClick={handleLoginReward}
           disabled={loginRewardClaimed}
-          style={{ backgroundColor: loginRewardClaimed ? 'gray' : 'orange', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}
+          style={{
+            backgroundColor: loginRewardClaimed ? 'gray' : 'orange',
+            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
+          }}
         >
           {loginRewardClaimed ? 'Login Reward Claimed' : 'Daily Login Reward'}
         </button>
@@ -230,7 +235,10 @@ export default function MainPage({ userId }) {
         <button
           onClick={handleSocialTask}
           disabled={socialTaskClaimed}
-          style={{ backgroundColor: socialTaskClaimed ? 'gray' : 'blue', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}
+          style={{
+            backgroundColor: socialTaskClaimed ? 'gray' : 'blue',
+            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
+          }}
         >
           {socialTaskClaimed ? 'Social Task Claimed' : 'Complete Social Task'}
         </button>
@@ -239,7 +247,10 @@ export default function MainPage({ userId }) {
         <button
           onClick={handlePresaleTask}
           disabled={presaleRewardClaimed}
-          style={{ backgroundColor: presaleRewardClaimed ? 'gray' : 'green', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}
+          style={{
+            backgroundColor: presaleRewardClaimed ? 'gray' : 'green',
+            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
+          }}
         >
           {presaleRewardClaimed ? 'Presale Task Claimed' : 'Join Presale Event'}
         </button>
@@ -248,7 +259,10 @@ export default function MainPage({ userId }) {
         <button
           onClick={handleReferralReward}
           disabled={referralRewardClaimed}
-          style={{ backgroundColor: referralRewardClaimed ? 'gray' : 'purple', color: 'white', padding: 10, borderRadius: 5, marginTop: 10 }}
+          style={{
+            backgroundColor: referralRewardClaimed ? 'gray' : 'purple',
+            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
+          }}
         >
           {referralRewardClaimed ? 'Referral Bonus Claimed' : 'Claim Referral Bonus'}
         </button>
