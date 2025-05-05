@@ -1,3 +1,5 @@
+"use client"; 
+
 import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
 import Link from 'next/link';
