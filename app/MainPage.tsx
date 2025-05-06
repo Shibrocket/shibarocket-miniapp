@@ -35,11 +35,11 @@ export default function MainPage({ userId }) {
         const data = userSnap.data();
         setEnergy(data.energy || 0);
         setEarned(data.earned || 0);
-        setAdsWatched(data.adsWatched || false);
+        setAdsWatched(data.adsWatched === today);
         setLoginRewardClaimed(data.loginRewardClaimed === today);
         setSocialTaskClaimed(data.socialTaskClaimed === today);
         setPresaleRewardClaimed(data.presaleRewardClaimed === today);
-        setReferralRewardClaimed(data.referralRewardClaimed === true);
+        setReferralRewardClaimed(data.referralRewardClaimed || false);
       }
 
       const adminRef = doc(db, 'admins', userId);
@@ -87,6 +87,7 @@ export default function MainPage({ userId }) {
   };
 
   const handleAdWatch = async () => {
+    const today = getToday();
     if (adsWatched || energy >= MAX_ENERGY) return;
 
     const bonus = Math.min(BONUS_TAP_LIMIT, MAX_ENERGY - energy);
@@ -97,7 +98,7 @@ export default function MainPage({ userId }) {
 
     await updateDoc(doc(db, 'users', userId), {
       energy: newEnergy,
-      adsWatched: true,
+      adsWatched: today,
     });
   };
 
@@ -105,14 +106,14 @@ export default function MainPage({ userId }) {
     const today = getToday();
     if (loginRewardClaimed) return;
 
-    const reward = 500; // Basic reward; you can extend to streak later
+    const reward = 500; // Extend with streak logic if needed
 
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       loginRewardClaimed: today,
     });
 
-    setEarned((prev) => prev + reward);
+    setEarned(prev => prev + reward);
     setLoginRewardClaimed(true);
   };
 
@@ -135,7 +136,7 @@ export default function MainPage({ userId }) {
       socialTaskClaimed: today,
     });
 
-    setEarned((prev) => prev + reward);
+    setEarned(prev => prev + reward);
     setSocialTaskClaimed(true);
   };
 
@@ -158,19 +159,30 @@ export default function MainPage({ userId }) {
       presaleRewardClaimed: today,
     });
 
-    setEarned((prev) => prev + reward);
+    setEarned(prev => prev + reward);
     setPresaleRewardClaimed(true);
   };
 
   const handleReferralReward = async () => {
+    const today = getToday();
     if (referralRewardClaimed) return;
 
+    const poolRef = doc(db, `dailyPools/referralPool/${today}`);
+    const poolSnap = await getDoc(poolRef);
+    const pool = poolSnap.data();
+
+    const reward = 30000;
+    if (!pool || pool.remaining < reward) {
+      return alert("Referral reward pool is empty!");
+    }
+
+    await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
-      earned: increment(30000),
+      earned: increment(reward),
       referralRewardClaimed: true,
     });
 
-    setEarned((prev) => prev + 30000);
+    setEarned(prev => prev + reward);
     setReferralRewardClaimed(true);
   };
 
@@ -184,7 +196,6 @@ export default function MainPage({ userId }) {
         Presale Countdown:
         <Countdown
           date={presaleDate}
-          daysInHours
           renderer={({ days, hours, minutes, seconds }) => (
             <span style={{ marginLeft: 10 }}>
               {String(days).padStart(2, '0')}d : {String(hours).padStart(2, '0')}h : {String(minutes).padStart(2, '0')}m : {String(seconds).padStart(2, '0')}s
@@ -269,11 +280,13 @@ export default function MainPage({ userId }) {
       </div>
 
       {isAdmin && (
-        <Link href={`/adminDashboard?userId=${userId}`}>
-          <button style={{ marginTop: 30, background: "#000", color: "#fff", padding: 10, borderRadius: 5 }}>
-            Go to Admin Dashboard
-          </button>
-        </Link>
+        <div style={{ marginTop: 30 }}>
+          <Link href="/admin">
+            <button style={{ backgroundColor: 'red', color: 'white', padding: 10, borderRadius: 5 }}>
+              Go to Admin Dashboard
+            </button>
+          </Link>
+        </div>
       )}
     </div>
   );
