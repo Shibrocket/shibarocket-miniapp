@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
 import Link from 'next/link';
-import { doc, getDoc, updateDoc, setDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, increment, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function MainPage({ userId }) {
@@ -15,6 +15,7 @@ export default function MainPage({ userId }) {
   const [socialTaskClaimed, setSocialTaskClaimed] = useState(false);
   const [presaleRewardClaimed, setPresaleRewardClaimed] = useState(false);
   const [referralRewardClaimed, setReferralRewardClaimed] = useState(false);
+  const [presaleStats, setPresaleStats] = useState({ totalEarned: 0, totalClaimed: 0, remaining: 0 });
 
   const MAX_ENERGY = 500;
   const FREE_TAP_LIMIT = 400;
@@ -25,17 +26,32 @@ export default function MainPage({ userId }) {
 
   useEffect(() => {
     if (!userId) return;
+    const today = getToday();
 
     const fetchData = async () => {
-      const today = getToday();
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         const data = userSnap.data();
-        setEnergy(data.energy || 0);
-        setEarned(data.earned || 0);
-        setAdsWatched(data.adsWatched === today);
+
+        // Reset if lastUpdated is from previous day
+        if (data.lastUpdated !== today) {
+          await updateDoc(userRef, {
+            energy: 0,
+            earned: 0,
+            adsWatched: '',
+            lastUpdated: today
+          });
+          setEnergy(0);
+          setEarned(0);
+          setAdsWatched(false);
+        } else {
+          setEnergy(data.energy || 0);
+          setEarned(data.earned || 0);
+          setAdsWatched(data.adsWatched === today);
+        }
+
         setLoginRewardClaimed(data.loginRewardClaimed === today);
         setSocialTaskClaimed(data.socialTaskClaimed === today);
         setPresaleRewardClaimed(data.presaleRewardClaimed === today);
@@ -49,6 +65,7 @@ export default function MainPage({ userId }) {
       }
 
       await ensureDailyPoolsExist(today);
+      await fetchPresaleStats();
     };
 
     fetchData();
@@ -83,6 +100,7 @@ export default function MainPage({ userId }) {
     await updateDoc(doc(db, 'users', userId), {
       energy: newEnergy,
       earned: newEarned,
+      lastUpdated: getToday()
     });
   };
 
@@ -99,6 +117,7 @@ export default function MainPage({ userId }) {
     await updateDoc(doc(db, 'users', userId), {
       energy: newEnergy,
       adsWatched: today,
+      lastUpdated: today
     });
   };
 
@@ -106,11 +125,12 @@ export default function MainPage({ userId }) {
     const today = getToday();
     if (loginRewardClaimed) return;
 
-    const reward = 500; // Extend with streak logic if needed
+    const reward = 500;
 
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       loginRewardClaimed: today,
+      lastUpdated: today
     });
 
     setEarned(prev => prev + reward);
@@ -126,14 +146,13 @@ export default function MainPage({ userId }) {
     const pool = poolSnap.data();
 
     const reward = 20000;
-    if (!pool || pool.remaining < reward) {
-      return alert("Social task rewards are finished!");
-    }
+    if (!pool || pool.remaining < reward) return alert("Social task rewards are finished!");
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       socialTaskClaimed: today,
+      lastUpdated: today
     });
 
     setEarned(prev => prev + reward);
@@ -149,14 +168,13 @@ export default function MainPage({ userId }) {
     const pool = poolSnap.data();
 
     const reward = 75000;
-    if (!pool || pool.remaining < reward) {
-      return alert("Presale rewards are finished!");
-    }
+    if (!pool || pool.remaining < reward) return alert("Presale rewards are finished!");
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       presaleRewardClaimed: today,
+      lastUpdated: today
     });
 
     setEarned(prev => prev + reward);
@@ -172,18 +190,42 @@ export default function MainPage({ userId }) {
     const pool = poolSnap.data();
 
     const reward = 30000;
-    if (!pool || pool.remaining < reward) {
-      return alert("Referral reward pool is empty!");
-    }
+    if (!pool || pool.remaining < reward) return alert("Referral reward pool is empty!");
 
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       referralRewardClaimed: true,
+      lastUpdated: today
     });
 
     setEarned(prev => prev + reward);
     setReferralRewardClaimed(true);
+  };
+
+  const fetchPresaleStats = async () => {
+    const userSnap = await getDocs(collection(db, 'users'));
+    let totalEarned = 0;
+    let totalClaimed = 0;
+
+    userSnap.forEach(doc => {
+      const data = doc.data();
+      totalEarned += data.earned || 0;
+      totalClaimed += data.claimed || 0;
+    });
+
+    const totalAirdrop = 100_000_000_000;
+    const remaining = totalAirdrop - totalClaimed;
+
+    setPresaleStats({
+      totalEarned,
+      totalClaimed,
+      remaining
+    });
+  };
+
+  const handleClaim = () => {
+    alert('Claim page will be implemented.');
   };
 
   if (!userId) return <div>Loading user data...</div>;
@@ -203,6 +245,12 @@ export default function MainPage({ userId }) {
           )}
         />
       </h3>
+
+      <div style={{ marginTop: 20, fontSize: 16 }}>
+        <p><strong>Total Earned:</strong> {presaleStats.totalEarned.toLocaleString()} $SHROCK</p>
+        <p><strong>Total Claimed:</strong> {presaleStats.totalClaimed.toLocaleString()} $SHROCK</p>
+        <p><strong>Remaining Airdrop Pool:</strong> {presaleStats.remaining.toLocaleString()} $SHROCK</p>
+      </div>
 
       <h2>Energy: {energy} / {getMaxEnergy()}</h2>
       <h2>Earned: {earned.toLocaleString()} $SHROCK</h2>
@@ -277,6 +325,23 @@ export default function MainPage({ userId }) {
         >
           {referralRewardClaimed ? 'Referral Bonus Claimed' : 'Claim Referral Bonus'}
         </button>
+
+        {new Date() >= presaleDate && earned > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={handleClaim}
+              style={{
+                backgroundColor: '#28a745',
+                color: 'white',
+                padding: 10,
+                borderRadius: 5,
+                fontWeight: 'bold'
+              }}
+            >
+              Claim $SHROCK
+            </button>
+          </div>
+        )}
       </div>
 
       {isAdmin && (
