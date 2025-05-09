@@ -3,8 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
 import Link from 'next/link';
-import { doc, getDoc, updateDoc, setDoc, increment, collection, getDocs } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  increment,
+  collection,
+  getDocs,
+  serverTimestamp
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+const claimAvailableDate = new Date('2025-06-01T00:00:00Z');
 
 export default function MainPage({ userId }) {
   const [energy, setEnergy] = useState(0);
@@ -16,47 +27,62 @@ export default function MainPage({ userId }) {
   const [presaleRewardClaimed, setPresaleRewardClaimed] = useState(false);
   const [referralRewardClaimed, setReferralRewardClaimed] = useState(false);
   const [presaleStats, setPresaleStats] = useState({ totalEarned: 0, totalClaimed: 0, remaining: 0 });
+  const [claimAvailable, setClaimAvailable] = useState(false);
 
   const MAX_ENERGY = 500;
   const FREE_TAP_LIMIT = 400;
   const BONUS_TAP_LIMIT = 100;
   const presaleDate = new Date('2025-06-01T00:00:00Z');
-
   const getToday = () => new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     if (!userId) return;
+
     const today = getToday();
 
     const fetchData = async () => {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
 
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-
-        // Reset if lastUpdated is from previous day
-        if (data.lastUpdated !== today) {
-          await updateDoc(userRef, {
-            energy: 0,
-            earned: 0,
-            adsWatched: '',
-            lastUpdated: today
-          });
-          setEnergy(0);
-          setEarned(0);
-          setAdsWatched(false);
-        } else {
-          setEnergy(data.energy || 0);
-          setEarned(data.earned || 0);
-          setAdsWatched(data.adsWatched === today);
-        }
-
-        setLoginRewardClaimed(data.loginRewardClaimed === today);
-        setSocialTaskClaimed(data.socialTaskClaimed === today);
-        setPresaleRewardClaimed(data.presaleRewardClaimed === today);
-        setReferralRewardClaimed(data.referralRewardClaimed || false);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          energy: 0,
+          earned: 0,
+          referrals: 0,
+          referralRewardClaimed: false,
+          loginStreak: 0,
+          totalTaps: 0,
+          shrockEarned: 0,
+          shrockUnclaimed: 0,
+          claimed: 0,
+          lastUpdated: today,
+          createdAt: serverTimestamp(),
+        });
       }
+
+      const freshSnap = await getDoc(userRef);
+      const data = freshSnap.data();
+
+      if (data.lastUpdated !== today) {
+        await updateDoc(userRef, {
+          energy: 0,
+          earned: 0,
+          adsWatched: '',
+          lastUpdated: today
+        });
+        setEnergy(0);
+        setEarned(0);
+        setAdsWatched(false);
+      } else {
+        setEnergy(data.energy || 0);
+        setEarned(data.earned || 0);
+        setAdsWatched(data.adsWatched === today);
+      }
+
+      setLoginRewardClaimed(data.loginRewardClaimed === today);
+      setSocialTaskClaimed(data.socialTaskClaimed === today);
+      setPresaleRewardClaimed(data.presaleRewardClaimed === today);
+      setReferralRewardClaimed(data.referralRewardClaimed || false);
 
       const adminRef = doc(db, 'admins', userId);
       const adminSnap = await getDoc(adminRef);
@@ -66,6 +92,7 @@ export default function MainPage({ userId }) {
 
       await ensureDailyPoolsExist(today);
       await fetchPresaleStats();
+      checkClaimAvailability();
     };
 
     fetchData();
@@ -77,7 +104,6 @@ export default function MainPage({ userId }) {
       { path: `dailyPools/presalePool/${date}`, amount: 333_000_000 },
       { path: `dailyPools/referralPool/${date}`, amount: 666_000_000 },
     ];
-
     for (let pool of pools) {
       const ref = doc(db, pool.path);
       const snap = await getDoc(ref);
@@ -93,10 +119,8 @@ export default function MainPage({ userId }) {
     if (energy >= getMaxEnergy()) return;
     const newEnergy = energy + 1;
     const newEarned = earned + 5;
-
     setEnergy(newEnergy);
     setEarned(newEarned);
-
     await updateDoc(doc(db, 'users', userId), {
       energy: newEnergy,
       earned: newEarned,
@@ -107,13 +131,10 @@ export default function MainPage({ userId }) {
   const handleAdWatch = async () => {
     const today = getToday();
     if (adsWatched || energy >= MAX_ENERGY) return;
-
     const bonus = Math.min(BONUS_TAP_LIMIT, MAX_ENERGY - energy);
     const newEnergy = energy + bonus;
-
     setEnergy(newEnergy);
     setAdsWatched(true);
-
     await updateDoc(doc(db, 'users', userId), {
       energy: newEnergy,
       adsWatched: today,
@@ -124,15 +145,12 @@ export default function MainPage({ userId }) {
   const handleLoginReward = async () => {
     const today = getToday();
     if (loginRewardClaimed) return;
-
     const reward = 500;
-
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       loginRewardClaimed: today,
       lastUpdated: today
     });
-
     setEarned(prev => prev + reward);
     setLoginRewardClaimed(true);
   };
@@ -140,21 +158,17 @@ export default function MainPage({ userId }) {
   const handleSocialTask = async () => {
     const today = getToday();
     if (socialTaskClaimed) return;
-
     const poolRef = doc(db, `dailyPools/socialTaskPool/${today}`);
     const poolSnap = await getDoc(poolRef);
     const pool = poolSnap.data();
-
     const reward = 20000;
     if (!pool || pool.remaining < reward) return alert("Social task rewards are finished!");
-
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       socialTaskClaimed: today,
       lastUpdated: today
     });
-
     setEarned(prev => prev + reward);
     setSocialTaskClaimed(true);
   };
@@ -162,21 +176,17 @@ export default function MainPage({ userId }) {
   const handlePresaleTask = async () => {
     const today = getToday();
     if (presaleRewardClaimed) return;
-
     const poolRef = doc(db, `dailyPools/presalePool/${today}`);
     const poolSnap = await getDoc(poolRef);
     const pool = poolSnap.data();
-
     const reward = 75000;
     if (!pool || pool.remaining < reward) return alert("Presale rewards are finished!");
-
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       presaleRewardClaimed: today,
       lastUpdated: today
     });
-
     setEarned(prev => prev + reward);
     setPresaleRewardClaimed(true);
   };
@@ -184,21 +194,17 @@ export default function MainPage({ userId }) {
   const handleReferralReward = async () => {
     const today = getToday();
     if (referralRewardClaimed) return;
-
     const poolRef = doc(db, `dailyPools/referralPool/${today}`);
     const poolSnap = await getDoc(poolRef);
     const pool = poolSnap.data();
-
     const reward = 30000;
     if (!pool || pool.remaining < reward) return alert("Referral reward pool is empty!");
-
     await updateDoc(poolRef, { remaining: increment(-reward) });
     await updateDoc(doc(db, 'users', userId), {
       earned: increment(reward),
       referralRewardClaimed: true,
       lastUpdated: today
     });
-
     setEarned(prev => prev + reward);
     setReferralRewardClaimed(true);
   };
@@ -207,25 +213,25 @@ export default function MainPage({ userId }) {
     const userSnap = await getDocs(collection(db, 'users'));
     let totalEarned = 0;
     let totalClaimed = 0;
-
     userSnap.forEach(doc => {
       const data = doc.data();
       totalEarned += data.earned || 0;
       totalClaimed += data.claimed || 0;
     });
-
     const totalAirdrop = 100_000_000_000;
     const remaining = totalAirdrop - totalClaimed;
+    setPresaleStats({ totalEarned, totalClaimed, remaining });
+  };
 
-    setPresaleStats({
-      totalEarned,
-      totalClaimed,
-      remaining
-    });
+  const checkClaimAvailability = () => {
+    const now = new Date();
+    setClaimAvailable(now >= claimAvailableDate);
   };
 
   const handleClaim = () => {
-    alert('Claim page will be implemented.');
+    if (!claimAvailable) return alert("Claiming will be available starting June 1st.");
+    alert("Redirecting to claim page (to be implemented)...");
+    // You can redirect to a claim page route here if available
   };
 
   if (!userId) return <div>Loading user data...</div>;
@@ -233,7 +239,6 @@ export default function MainPage({ userId }) {
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
       <h1 style={{ color: '#ff4500' }}>ShibaRocket Mini App</h1>
-
       <h3>
         Presale Countdown:
         <Countdown
@@ -246,110 +251,35 @@ export default function MainPage({ userId }) {
         />
       </h3>
 
-      <div style={{ marginTop: 20, fontSize: 16 }}>
+      <div style={{ marginTop: 20 }}>
+        <p><strong>Energy:</strong> {energy}/{getMaxEnergy()}</p>
+        <p><strong>Earned Today:</strong> {earned} $SHROCK</p>
+
+        <button onClick={handleTap} disabled={energy >= getMaxEnergy()}>Tap</button>
+        <button onClick={handleAdWatch} disabled={adsWatched}>Watch Ad (Bonus Energy)</button>
+        <button onClick={handleLoginReward} disabled={loginRewardClaimed}>Daily Login Reward</button>
+        <button onClick={handleSocialTask} disabled={socialTaskClaimed}>Complete Social Task</button>
+        <button onClick={handlePresaleTask} disabled={presaleRewardClaimed}>Presale Reminder Task</button>
+        <button onClick={handleReferralReward} disabled={referralRewardClaimed}>Referral Reward</button>
+
+        {claimAvailable && (
+          <div style={{ marginTop: 20 }}>
+            <button onClick={handleClaim}>Claim $SHROCK</button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 30 }}>
+        <h4>Presale Stats:</h4>
         <p><strong>Total Earned:</strong> {presaleStats.totalEarned.toLocaleString()} $SHROCK</p>
         <p><strong>Total Claimed:</strong> {presaleStats.totalClaimed.toLocaleString()} $SHROCK</p>
         <p><strong>Remaining Airdrop Pool:</strong> {presaleStats.remaining.toLocaleString()} $SHROCK</p>
       </div>
 
-      <h2>Energy: {energy} / {getMaxEnergy()}</h2>
-      <h2>Earned: {earned.toLocaleString()} $SHROCK</h2>
-
-      <button
-        onClick={handleTap}
-        disabled={energy >= getMaxEnergy()}
-        style={{
-          backgroundColor: energy < getMaxEnergy() ? 'green' : 'gray',
-          color: 'white', padding: 10, fontSize: 18, borderRadius: 5, marginTop: 10, width: 150
-        }}
-      >
-        TAP
-      </button>
-
-      <div style={{ marginTop: 20 }}>
-        <button
-          onClick={handleAdWatch}
-          disabled={adsWatched || energy >= MAX_ENERGY}
-          style={{
-            backgroundColor: !adsWatched && energy < MAX_ENERGY ? '#6c757d' : 'gray',
-            color: 'white', padding: 10, borderRadius: 5, marginTop: 10, width: 220
-          }}
-        >
-          {adsWatched ? 'Ad Watched (+100 Energy)' : 'Watch Ad for +100 Energy'}
-        </button>
-
-        <br />
-        <button
-          onClick={handleLoginReward}
-          disabled={loginRewardClaimed}
-          style={{
-            backgroundColor: loginRewardClaimed ? 'gray' : 'orange',
-            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
-          }}
-        >
-          {loginRewardClaimed ? 'Login Reward Claimed' : 'Daily Login Reward'}
-        </button>
-
-        <br />
-        <button
-          onClick={handleSocialTask}
-          disabled={socialTaskClaimed}
-          style={{
-            backgroundColor: socialTaskClaimed ? 'gray' : 'blue',
-            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
-          }}
-        >
-          {socialTaskClaimed ? 'Social Task Claimed' : 'Complete Social Task'}
-        </button>
-
-        <br />
-        <button
-          onClick={handlePresaleTask}
-          disabled={presaleRewardClaimed}
-          style={{
-            backgroundColor: presaleRewardClaimed ? 'gray' : 'green',
-            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
-          }}
-        >
-          {presaleRewardClaimed ? 'Presale Task Claimed' : 'Join Presale Event'}
-        </button>
-
-        <br />
-        <button
-          onClick={handleReferralReward}
-          disabled={referralRewardClaimed}
-          style={{
-            backgroundColor: referralRewardClaimed ? 'gray' : 'purple',
-            color: 'white', padding: 10, borderRadius: 5, marginTop: 10
-          }}
-        >
-          {referralRewardClaimed ? 'Referral Bonus Claimed' : 'Claim Referral Bonus'}
-        </button>
-
-        {new Date() >= presaleDate && earned > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <button
-              onClick={handleClaim}
-              style={{
-                backgroundColor: '#28a745',
-                color: 'white',
-                padding: 10,
-                borderRadius: 5,
-                fontWeight: 'bold'
-              }}
-            >
-              Claim $SHROCK
-            </button>
-          </div>
-        )}
-      </div>
-
       {isAdmin && (
         <div style={{ marginTop: 30 }}>
           <Link href="/admin">
-            <button style={{ backgroundColor: 'red', color: 'white', padding: 10, borderRadius: 5 }}>
-              Go to Admin Dashboard
-            </button>
+            <button>Go to Admin Dashboard</button>
           </Link>
         </div>
       )}
