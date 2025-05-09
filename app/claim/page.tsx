@@ -23,7 +23,7 @@ export default function ClaimPage() {
   const [history, setHistory] = useState([]);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId");
+  const userId = searchParams?.get("userId") || '';
 
   useEffect(() => {
     if (!userId) return;
