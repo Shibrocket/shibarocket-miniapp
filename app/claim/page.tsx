@@ -9,7 +9,7 @@ import {
   collection,
   addDoc,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -20,10 +20,10 @@ export default function ClaimPage() {
   const [totalClaimed, setTotalClaimed] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<any[]>([]); // we use any[] for flexibility
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userId = searchParams?.get("userId") || '';
+  const userId = searchParams?.get("userId") || "";
 
   useEffect(() => {
     if (!userId) return;
@@ -48,21 +48,21 @@ export default function ClaimPage() {
       if (unclaimed <= 0) {
         setError("No $SHROCK tokens to claim.");
         setLoading(false);
-        fetchClaimHistory(); // still show past history
+        fetchClaimHistory(); // Show past history if no new claim
         return;
       }
 
-      // Update user's claimed and reset earned
+      // Update claimed balance and reset earned
       await updateDoc(userRef, {
         claimed: increment(unclaimed),
-        earned: 0
+        earned: 0,
       });
 
-      // Save claim record
+      // Record history entry with timestamp
       const historyRef = collection(db, "claims", userId, "history");
       await addDoc(historyRef, {
         amount: unclaimed,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(), // Firebase server timestamp
       });
 
       setClaimedAmount(unclaimed);
@@ -83,7 +83,11 @@ export default function ClaimPage() {
       const historySnap = await getDocs(historyRef);
       const historyData = historySnap.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => b.timestamp?.seconds - a.timestamp?.seconds);
+        .sort((a, b) => {
+          const aTime = (a as any)?.timestamp?.seconds || 0;
+          const bTime = (b as any)?.timestamp?.seconds || 0;
+          return bTime - aTime;
+        });
       setHistory(historyData);
     } catch (err) {
       console.error("Failed to fetch claim history", err);
@@ -94,7 +98,7 @@ export default function ClaimPage() {
     router.push(`/?userId=${userId}`);
   };
 
-  const formatDate = (timestamp) => {
+  const formatDate = (timestamp: any) => {
     if (!timestamp?.seconds) return "Unknown";
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleString();
@@ -111,16 +115,20 @@ export default function ClaimPage() {
         <div style={{ marginTop: 30 }}>
           <div style={{ fontSize: 80, animation: "pop 0.6s ease" }}>✅</div>
           <h2 style={{ color: "green" }}>Claim Successful!</h2>
-          <p>
-            You have claimed <strong>{claimedAmount.toLocaleString()}</strong> $SHROCK.
-          </p>
-          <p>
-            Your total claimed balance is now <strong>{totalClaimed.toLocaleString()}</strong> $SHROCK.
-          </p>
-          <button onClick={goBack} style={{
-            marginTop: 20, padding: 10, backgroundColor: "#28a745", color: "white",
-            border: "none", borderRadius: 6, fontSize: 16
-          }}>
+          <p>You have claimed <strong>{claimedAmount.toLocaleString()}</strong> $SHROCK.</p>
+          <p>Your total claimed balance is now <strong>{totalClaimed.toLocaleString()}</strong> $SHROCK.</p>
+          <button
+            onClick={goBack}
+            style={{
+              marginTop: 20,
+              padding: 10,
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 16,
+            }}
+          >
             Return to Mini App
           </button>
         </div>
