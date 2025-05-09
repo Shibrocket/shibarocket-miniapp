@@ -66,26 +66,32 @@ export default function MainPage({ userId }) {
       const freshSnap = await getDoc(userRef);
       const data = freshSnap.data();
 
-      if (data.lastUpdated !== today) {
-        await updateDoc(userRef, {
-          energy: 0,
-          earned: 0,
-          adsWatched: '',
-          lastUpdated: today
-        });
-        setEnergy(0);
-        setEarned(0);
-        setAdsWatched(false);
-      } else {
-        setEnergy(data.energy || 0);
-        setEarned(data.earned || 0);
-        setAdsWatched(data.adsWatched === today);
-      }
+      const freshSnap = await getDoc(userRef);
 
-      setLoginRewardClaimed(data.loginRewardClaimed === today);
-      setSocialTaskClaimed(data.socialTaskClaimed === today);
+      if (freshSnap.exists()) {
+        const data = freshSnap.data();
+
+        if (data?.lastUpdated !== today) {
+          await updateDoc(userRef, {
+            energy: 0,
+            earned: 0,
+            adsWatched: '',
+            lastUpdated: today
+          });
+          setEnergy(0);
+          setEarned(0);
+          setAdsWatched(false);
+        } else {
+          setEnergy(data.energy || 0);
+          setEarned(data.earned || 0);
+          setAdsWatched(data.adsWatched === today);
+        }
+
+        setLoginRewardClaimed(data.loginRewardClaimed === today);
+        setSocialTaskClaimed(data.socialTaskClaimed === today);
       setPresaleRewardClaimed(data.presaleRewardClaimed === today);
       setReferralRewardClaimed(data.referralRewardClaimed || false);
+      }
 
       const adminRef = doc(db, 'admins', userId);
       const adminSnap = await getDoc(adminRef);
