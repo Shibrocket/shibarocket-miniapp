@@ -64,10 +64,6 @@ export default function MainPage({ userId }) {
       }
 
       const freshSnap = await getDoc(userRef);
-      const data = freshSnap.data();
-
-      const freshSnap = await getDoc(userRef);
-
       if (freshSnap.exists()) {
         const data = freshSnap.data();
 
