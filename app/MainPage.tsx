@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Countdown from 'react-countdown';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   doc,
   getDoc,
@@ -18,6 +19,8 @@ import { db } from '@/lib/firebase';
 const claimAvailableDate = new Date('2025-06-01T00:00:00Z');
 
 export default function MainPage({ userId }) {
+  const router = useRouter();
+
   const [energy, setEnergy] = useState(0);
   const [earned, setEarned] = useState(0);
   const [adsWatched, setAdsWatched] = useState(false);
@@ -229,9 +232,11 @@ export default function MainPage({ userId }) {
   };
 
   const handleClaim = () => {
-    if (!claimAvailable) return alert("Claiming will be available starting June 1st.");
-    alert("Redirecting to claim page (to be implemented)...");
-    // You can redirect to a claim page route here if available
+    if (!claimAvailable) {
+      alert("Claiming is only available from June 1st.");
+      return;
+    }
+    router.push('/claim');
   };
 
   if (!userId) return <div>Loading user data...</div>;
@@ -256,11 +261,11 @@ export default function MainPage({ userId }) {
         <p><strong>Earned Today:</strong> {earned} $SHROCK</p>
 
         <button onClick={handleTap} disabled={energy >= getMaxEnergy()}>Tap</button>
-        <button onClick={handleAdWatch} disabled={adsWatched}>Watch Ad (Bonus Energy)</button>
-        <button onClick={handleLoginReward} disabled={loginRewardClaimed}>Daily Login Reward</button>
-        <button onClick={handleSocialTask} disabled={socialTaskClaimed}>Complete Social Task</button>
-        <button onClick={handlePresaleTask} disabled={presaleRewardClaimed}>Presale Reminder Task</button>
-        <button onClick={handleReferralReward} disabled={referralRewardClaimed}>Referral Reward</button>
+        <button onClick={handleAdWatch} disabled={adsWatched}>Watch Ad</button>
+        <button onClick={handleLoginReward} disabled={loginRewardClaimed}>Daily Login</button>
+        <button onClick={handleSocialTask} disabled={socialTaskClaimed}>Social Task</button>
+        <button onClick={handlePresaleTask} disabled={presaleRewardClaimed}>Presale Reminder</button>
+        <button onClick={handleReferralReward} disabled={referralRewardClaimed}>Referral Bonus</button>
 
         {claimAvailable && (
           <div style={{ marginTop: 20 }}>
@@ -273,7 +278,7 @@ export default function MainPage({ userId }) {
         <h4>Presale Stats:</h4>
         <p><strong>Total Earned:</strong> {presaleStats.totalEarned.toLocaleString()} $SHROCK</p>
         <p><strong>Total Claimed:</strong> {presaleStats.totalClaimed.toLocaleString()} $SHROCK</p>
-        <p><strong>Remaining Airdrop Pool:</strong> {presaleStats.remaining.toLocaleString()} $SHROCK</p>
+        <p><strong>Remaining Airdrop:</strong> {presaleStats.remaining.toLocaleString()} $SHROCK</p>
       </div>
 
       {isAdmin && (
