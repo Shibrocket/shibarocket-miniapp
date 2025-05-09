@@ -24,7 +24,7 @@ export default function ClaimPageContent() {
   const [history, setHistory] = useState<any[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId") || "";
+  const userId = searchParams?.get("userId") || "";
 
   useEffect(() => {
     if (!userId) return;
