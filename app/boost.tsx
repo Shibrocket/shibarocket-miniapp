@@ -71,11 +71,6 @@ export default function BoostPage({ userId }) {
       timestamp: serverTimestamp(),
     });
 
-    // Check if confetti should be shown
-    if (reward >= 100000) {
-      <Confetti />;
-    }
-
     checkCooldown(); // Recheck cooldown after rolling
   };
 
@@ -134,7 +129,8 @@ export default function BoostPage({ userId }) {
         </div>
       </div>
 
-      {luckyDiceResult >= 100000 && <Confetti />}  {/* Show Confetti for high rewards */}
+      {/* Conditionally render Confetti */}
+      {luckyDiceResult !== null && luckyDiceResult >= 100000 && <Confetti />}
 
       <div className="fixed bottom-0 w-full bg-zinc-900 border-t border-gray-700 flex justify-around p-2">
         {/* Bottom tab navigation */}
