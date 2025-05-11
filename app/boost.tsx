@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, addDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@lib/firebase";
+import Confetti from "react-confetti"; // Import Confetti
 
 export default function BoostPage({ userId }) {
   const [energy, setEnergy] = useState(0);
   const [adsWatched, setAdsWatched] = useState(false);
-  const [luckyDiceResult, setLuckyDiceResult] = useState(null);
+  const [luckyDiceResult, setLuckyDiceResult] = useState<number | null>(null);
+  const [cooldownActive, setCooldownActive] = useState(false);
   const [timer, setTimer] = useState(0);
   const router = useRouter();
 
@@ -28,6 +30,7 @@ export default function BoostPage({ userId }) {
       const data = userSnap.data();
       setEnergy(data.energy || 0);
       setAdsWatched(data.adsWatched === getToday());
+      checkCooldown();
     }
   };
 
@@ -48,14 +51,45 @@ export default function BoostPage({ userId }) {
   };
 
   const handleLuckyDice = async () => {
+    if (cooldownActive) {
+      alert("You can only roll once every 24 hours.");
+      return;
+    }
+
     const random = Math.floor(Math.random() * 100);
     const reward = random < 50 ? 10000 : random < 80 ? 50000 : 100000;
     setLuckyDiceResult(reward);
 
+    // Store in Firestore
     await updateDoc(doc(db, "users", userId), {
       earned: reward,
       lastUpdated: serverTimestamp(),
     });
+
+    await addDoc(collection(db, "users", userId, "diceHistory"), {
+      result: reward,
+      timestamp: serverTimestamp(),
+    });
+
+    // Check if confetti should be shown
+    if (reward >= 100000) {
+      <Confetti />;
+    }
+
+    checkCooldown(); // Recheck cooldown after rolling
+  };
+
+  const checkCooldown = async () => {
+    const historySnap = await getDocs(collection(db, "users", userId, "diceHistory"));
+    const lastRoll = historySnap.docs
+      .sort((a, b) => b.data().timestamp.seconds - a.data().timestamp.seconds)[0];
+
+    if (lastRoll) {
+      const lastTimestamp = new Date(lastRoll.data().timestamp.seconds * 1000);
+      const now = new Date();
+      const diffHours = (now.getTime() - lastTimestamp.getTime()) / 1000 / 60 / 60;
+      setCooldownActive(diffHours < 24);
+    }
   };
 
   return (
@@ -99,6 +133,8 @@ export default function BoostPage({ userId }) {
           </div>
         </div>
       </div>
+
+      {luckyDiceResult >= 100000 && <Confetti />}  {/* Show Confetti for high rewards */}
 
       <div className="fixed bottom-0 w-full bg-zinc-900 border-t border-gray-700 flex justify-around p-2">
         {/* Bottom tab navigation */}
