@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ export default function TasksPage() {
   const [presaleRewardClaimed, setPresaleRewardClaimed] = useState(false);
   const [earned, setEarned] = useState(0);
   const [energy, setEnergy] = useState(0);
+  const [loading, setLoading] = useState(true);  // Track loading state
   const router = useRouter();
 
   const getToday = () => new Date().toISOString().slice(0, 10);
@@ -21,16 +22,22 @@ export default function TasksPage() {
     if (!userId) return;
 
     const fetchData = async () => {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
+      try {
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
 
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setEnergy(data.energy || 0);
-        setEarned(data.earned || 0);
-        setLoginRewardClaimed(data.loginRewardClaimed === getToday());
-        setSocialTaskClaimed(data.socialTaskClaimed === getToday());
-        setPresaleRewardClaimed(data.presaleRewardClaimed === getToday());
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setEnergy(data.energy || 0);
+          setEarned(data.earned || 0);
+          setLoginRewardClaimed(data.loginRewardClaimed === getToday());
+          setSocialTaskClaimed(data.socialTaskClaimed === getToday());
+          setPresaleRewardClaimed(data.presaleRewardClaimed === getToday());
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);  // Set loading to false after fetching data
       }
     };
 
@@ -39,56 +46,79 @@ export default function TasksPage() {
 
   const handleLoginReward = async () => {
     if (loginRewardClaimed) return;
+    try {
+      const userRef = doc(db, "users", userId);
+      const reward = 500;
+      await updateDoc(userRef, {
+        earned: increment(reward),
+        loginRewardClaimed: getToday(),
+        lastUpdated: serverTimestamp(),
+      });
 
-    const userRef = doc(db, "users", userId);
-    const reward = 500;
-    await updateDoc(userRef, {
-      earned: increment(reward),
-      loginRewardClaimed: getToday(),
-      lastUpdated: serverTimestamp(),
-    });
-
-    setEarned((prev) => prev + reward);
-    setLoginRewardClaimed(true);
+      setEarned((prev) => prev + reward);
+      setLoginRewardClaimed(true);
+    } catch (error) {
+      console.error("Failed to claim login reward:", error);
+      alert("Something went wrong. Try again later.");
+    }
   };
 
   const handleSocialTask = async () => {
     if (socialTaskClaimed) return;
+    try {
+      const userRef = doc(db, "users", userId);
+      const reward = 20000;
+      await updateDoc(userRef, {
+        earned: increment(reward),
+        socialTaskClaimed: getToday(),
+        lastUpdated: serverTimestamp(),
+      });
 
-    const userRef = doc(db, "users", userId);
-    const reward = 20000;
-    await updateDoc(userRef, {
-      earned: increment(reward),
-      socialTaskClaimed: getToday(),
-      lastUpdated: serverTimestamp(),
-    });
-
-    setEarned((prev) => prev + reward);
-    setSocialTaskClaimed(true);
+      setEarned((prev) => prev + reward);
+      setSocialTaskClaimed(true);
+    } catch (error) {
+      console.error("Failed to claim social task reward:", error);
+      alert("Something went wrong. Try again later.");
+    }
   };
 
   const handlePresaleTask = async () => {
     if (presaleRewardClaimed) return;
+    try {
+      const userRef = doc(db, "users", userId);
+      const reward = 75000;
+      await updateDoc(userRef, {
+        earned: increment(reward),
+        presaleRewardClaimed: getToday(),
+        lastUpdated: serverTimestamp(),
+      });
 
-    const userRef = doc(db, "users", userId);
-    const reward = 75000;
-    await updateDoc(userRef, {
-      earned: increment(reward),
-      presaleRewardClaimed: getToday(),
-      lastUpdated: serverTimestamp(),
-    });
-
-    setEarned((prev) => prev + reward);
-    setPresaleRewardClaimed(true);
+      setEarned((prev) => prev + reward);
+      setPresaleRewardClaimed(true);
+    } catch (error) {
+      console.error("Failed to claim presale task reward:", error);
+      alert("Something went wrong. Try again later.");
+    }
   };
 
   const goBack = () => {
     router.push("/");  // Redirect to the main page
   };
 
+  // Loading state: return loading spinner or message if still fetching user data
+  if (loading) {
+    return (
+      <div className="bg-black min-h-screen text-white flex items-center justify-center">
+        <p>Loading your tasks...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-black min-h-screen text-white flex flex-col items-center py-10">
       <h1 className="text-3xl font-bold text-center text-pink-500 mb-6">Cosmic Task Center</h1>
+
+      <p className="text-center text-yellow-400 mb-4">Total Earned: {earned.toLocaleString()} $SHROCK</p>
 
       <div className="w-full max-w-md px-4">
         <p className="text-lg text-center mb-4">Earn $SHROCK by completing these tasks!</p>
@@ -158,3 +188,4 @@ export default function TasksPage() {
     </div>
   );
 }
+
