@@ -4,7 +4,16 @@ import React, { useEffect, useState } from "react";
 import Countdown from "react-countdown";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { doc, getDoc, updateDoc, setDoc, collection, getDocs, increment, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  collection,
+  getDocs,
+  increment,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "@lib/firebase";
 
 const presaleDate = new Date("2025-06-01T00:00:00Z");
@@ -215,6 +224,13 @@ export default function MainPage({ userId }) {
         <p>Energy: {energy}/{getMaxEnergy()}</p>
         <p>Earned Today: {earned.toLocaleString()} $SHROCK</p>
 
+        {/* Round Tap Button */}
+        <div className="shrock-button-container mt-4">
+          <button onClick={() => alert('Tapped to earn $SHROCK!')} className="shrock-button">
+            <img src="/shrock-coin.png" alt="$SHROCK Coin" className="shrock-logo" />
+          </button>
+        </div>
+
         {claimAvailable && (
           <button onClick={handleClaim} className="bg-green-600 text-white px-6 py-2 rounded-full mt-4">
             Claim $SHROCK
@@ -230,7 +246,7 @@ export default function MainPage({ userId }) {
             <button
               disabled={adsWatched}
               onClick={handleAdWatch}
-              className={`px-3 py-1 text-xs rounded ${adsWatched ? 'bg-gray-600' : 'bg-green-600'}`}
+              className={`px-3 py-1 text-xs rounded ${adsWatched ? "bg-gray-600" : "bg-green-600"}`}
             >
               {adsWatched ? "Used" : "Watch Ad"}
             </button>
@@ -258,6 +274,37 @@ export default function MainPage({ userId }) {
       <style jsx>{`
         .neon-text {
           text-shadow: 0 0 10px #ff4500, 0 0 20px #ff4500;
+        }
+
+        .shrock-button-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .shrock-button {
+          background-color: #0e0e2a;
+          border: none;
+          border-radius: 50%;
+          padding: 15px;
+          width: 100px;
+          height: 100px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .shrock-button:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+        }
+
+        .shrock-logo {
+          width: 70%;
+          height: auto;
         }
       `}</style>
     </div>
