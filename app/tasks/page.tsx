@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useUser } from "@/context/UserContext";  // Import the UserContext
 
-export default function TasksPage({ userId }) {
+export default function TasksPage() {
+  const { userId } = useUser();  // Access userId from context
   const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
   const [socialTaskClaimed, setSocialTaskClaimed] = useState(false);
   const [presaleRewardClaimed, setPresaleRewardClaimed] = useState(false);
