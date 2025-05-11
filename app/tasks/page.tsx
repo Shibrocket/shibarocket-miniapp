@@ -4,16 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { db } from "@lib/firebase";
-import { useUser } from "@/context/UserContext";  // Import the UserContext
+import { useUser } from "@/context/UserContext";  // Access userId from context
 
 export default function TasksPage() {
-  const { userId } = useUser();  // Access userId from context
+  const { userId } = useUser();
   const [loginRewardClaimed, setLoginRewardClaimed] = useState(false);
   const [socialTaskClaimed, setSocialTaskClaimed] = useState(false);
   const [presaleRewardClaimed, setPresaleRewardClaimed] = useState(false);
   const [earned, setEarned] = useState(0);
   const [energy, setEnergy] = useState(0);
-  const [loading, setLoading] = useState(true);  // Track loading state
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const getToday = () => new Date().toISOString().slice(0, 10);
@@ -37,75 +37,29 @@ export default function TasksPage() {
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
-        setLoading(false);  // Set loading to false after fetching data
+        setLoading(false);
       }
     };
 
     fetchData();
   }, [userId]);
 
-  const handleLoginReward = async () => {
-    if (loginRewardClaimed) return;
+  const handleTaskClaim = async (taskKey: string, reward: number, setState: React.Dispatch<React.SetStateAction<boolean>>) => {
     try {
-      const userRef = doc(db, "users", userId);
-      const reward = 500;
+      const userRef = doc(db, "users", userId!);
       await updateDoc(userRef, {
         earned: increment(reward),
-        loginRewardClaimed: getToday(),
+        [taskKey]: getToday(),
         lastUpdated: serverTimestamp(),
       });
-
       setEarned((prev) => prev + reward);
-      setLoginRewardClaimed(true);
+      setState(true);
     } catch (error) {
-      console.error("Failed to claim login reward:", error);
+      console.error(`Failed to claim ${taskKey} reward:`, error);
       alert("Something went wrong. Try again later.");
     }
   };
 
-  const handleSocialTask = async () => {
-    if (socialTaskClaimed) return;
-    try {
-      const userRef = doc(db, "users", userId);
-      const reward = 20000;
-      await updateDoc(userRef, {
-        earned: increment(reward),
-        socialTaskClaimed: getToday(),
-        lastUpdated: serverTimestamp(),
-      });
-
-      setEarned((prev) => prev + reward);
-      setSocialTaskClaimed(true);
-    } catch (error) {
-      console.error("Failed to claim social task reward:", error);
-      alert("Something went wrong. Try again later.");
-    }
-  };
-
-  const handlePresaleTask = async () => {
-    if (presaleRewardClaimed) return;
-    try {
-      const userRef = doc(db, "users", userId);
-      const reward = 75000;
-      await updateDoc(userRef, {
-        earned: increment(reward),
-        presaleRewardClaimed: getToday(),
-        lastUpdated: serverTimestamp(),
-      });
-
-      setEarned((prev) => prev + reward);
-      setPresaleRewardClaimed(true);
-    } catch (error) {
-      console.error("Failed to claim presale task reward:", error);
-      alert("Something went wrong. Try again later.");
-    }
-  };
-
-  const goBack = () => {
-    router.push("/");  // Redirect to the main page
-  };
-
-  // Loading state: return loading spinner or message if still fetching user data
   if (loading) {
     return (
       <div className="bg-black min-h-screen text-white flex items-center justify-center">
@@ -127,7 +81,7 @@ export default function TasksPage() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
           <p className="text-xl text-blue-400 mb-2">Daily Login Reward</p>
           <button
-            onClick={handleLoginReward}
+            onClick={() => handleTaskClaim("loginRewardClaimed", 500, setLoginRewardClaimed)}
             className={`w-full py-2 rounded text-white ${loginRewardClaimed ? "bg-gray-600" : "bg-blue-600"}`}
             disabled={loginRewardClaimed}
           >
@@ -139,7 +93,7 @@ export default function TasksPage() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
           <p className="text-xl text-purple-400 mb-2">Complete Social Task</p>
           <button
-            onClick={handleSocialTask}
+            onClick={() => handleTaskClaim("socialTaskClaimed", 20000, setSocialTaskClaimed)}
             className={`w-full py-2 rounded text-white ${socialTaskClaimed ? "bg-gray-600" : "bg-purple-600"}`}
             disabled={socialTaskClaimed}
           >
@@ -151,7 +105,7 @@ export default function TasksPage() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
           <p className="text-xl text-green-400 mb-2">Presale Reminder</p>
           <button
-            onClick={handlePresaleTask}
+            onClick={() => handleTaskClaim("presaleRewardClaimed", 75000, setPresaleRewardClaimed)}
             className={`w-full py-2 rounded text-white ${presaleRewardClaimed ? "bg-gray-600" : "bg-green-600"}`}
             disabled={presaleRewardClaimed}
           >
@@ -161,7 +115,7 @@ export default function TasksPage() {
 
         <div className="text-center mt-6">
           <button
-            onClick={goBack}
+            onClick={() => router.push("/")}
             className="bg-blue-600 text-white px-6 py-2 rounded-full"
           >
             Back to Main Page
@@ -169,7 +123,6 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Cosmic Background Animation */}
       <style jsx>{`
         @keyframes cosmic {
           0% {
@@ -187,5 +140,4 @@ export default function TasksPage() {
       `}</style>
     </div>
   );
-}}
-
+}
