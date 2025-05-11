@@ -36,6 +36,9 @@ export default function MainPage({ userId }) {
     remaining: 0,
   });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [tasksCount, setTasksCount] = useState(39); // Mock badge count
+  const [aiCount, setAiCount] = useState(1); // Mock badge count
+  const [boostCount, setBoostCount] = useState(15); // Mock badge count
 
   const MAX_ENERGY = 500;
   const FREE_TAP_LIMIT = 400;
@@ -203,17 +206,17 @@ export default function MainPage({ userId }) {
   };
 
   return (
-    <div className="bg-black min-h-screen text-white font-sans flex flex-col items-center">
+    <div className="main-page min-h-screen text-white font-sans flex flex-col items-center relative">
       <div className="pt-8 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <img src="/shrock-coin.png" className="w-20 h-20 rounded-full" alt="$SHROCK" />
-          <h1 className="text-2xl font-bold text-orange-400 neon-text">ShibaRocket</h1>
+          <h1 className="text-2xl font-bold neon-text">$SHROCK</h1>
         </div>
-        <p className="text-sm text-center">Presale Countdown:</p>
+        <p className="text-sm text-center text-purple-300">Presale Countdown:</p>
         <Countdown
           date={presaleDate}
           renderer={({ days, hours, minutes, seconds }) => (
-            <p className="text-lg text-purple-400 mt-1 text-center">
+            <p className="text-lg text-yellow-300 mt-1 text-center">
               {days}d : {hours}h : {minutes}m : {seconds}s
             </p>
           )}
@@ -221,8 +224,21 @@ export default function MainPage({ userId }) {
       </div>
 
       <div className="mt-6 text-center w-full max-w-md">
-        <p>Energy: {energy}/{getMaxEnergy()}</p>
-        <p>Earned Today: {earned.toLocaleString()} $SHROCK</p>
+        <p className="text-cyan-300">Energy: {energy}/{getMaxEnergy()}</p>
+        <p className="text-pink-300">Your Balance: {earned.toLocaleString()} $SHROCK</p>
+
+        {/* Interactive Buttons */}
+        <div className="interactive-buttons mt-6 flex flex-col items-center gap-3">
+          <button className="cosmic-button">$SHROCK</button>
+          <button className="cosmic-button">$SHROCK-Galaxy</button>
+          <button className="cosmic-button">$SHROCK-Treasures</button>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="decorative-elements absolute top-1/4 left-4 flex flex-col gap-4">
+          <img src="/heart-icon.png" alt="Heart" className="w-10 h-10 animate-float" />
+          <img src="/sapphire-ticket.png" alt="Sapphire Ticket" className="w-16 h-10 animate-float" />
+        </div>
 
         {/* Round Tap Button */}
         <div className="shrock-button-container mt-4">
@@ -242,7 +258,7 @@ export default function MainPage({ userId }) {
         <h2 className="text-lg font-bold text-purple-400 mb-2 text-center">Free Daily Boosters</h2>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <p className="text-sm mb-1">Full Battery</p>
+            <p className="text-sm mb-1 text-gray-300">Full Battery</p>
             <button
               disabled={adsWatched}
               onClick={handleAdWatch}
@@ -252,7 +268,7 @@ export default function MainPage({ userId }) {
             </button>
           </div>
           <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <p className="text-sm mb-1">Lucky Dice</p>
+            <p className="text-sm mb-1 text-gray-300">Lucky Dice</p>
             <button
               onClick={() => alert("Lucky Dice feature coming soon!")}
               className="px-3 py-1 text-xs bg-blue-500 rounded"
@@ -263,17 +279,80 @@ export default function MainPage({ userId }) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 w-full bg-zinc-900 border-t border-gray-700 flex justify-around p-2">
-        <button onClick={() => router.push("/tasks")} className="text-xs text-white">Tasks</button>
-        <button onClick={() => router.push("/boost")} className="text-xs text-white">Boost</button>
-        <button onClick={() => router.push("/w-ai")} className="text-xs text-white">W-AI</button>
-        <button onClick={() => router.push("/referrals")} className="text-xs text-white">Referrals</button>
-        <button onClick={() => router.push("/claim")} className="text-xs text-white">Claim</button>
+      <div className="navigation fixed bottom-0 w-full bg-zinc-900 border-t border-purple-700 flex justify-around p-2">
+        <Link href="/tasks" className="nav-item">
+          Tasks <span className="badge">{tasksCount}</span>
+        </Link>
+        <Link href="/w-ai" className="nav-item">
+          $SHROCK-AI <span className="badge">{aiCount}</span>
+        </Link>
+        <Link href="/boost" className="nav-item">
+          Boost <span className="badge">{boostCount}</span>
+        </Link>
+        <Link href="/referrals" className="nav-item">Referrals</Link>
+        <Link href="/claim" className="nav-item">Claim</Link>
       </div>
 
       <style jsx>{`
+        .main-page {
+          background: linear-gradient(135deg, #1a0033, #4b0082, #8a2be2);
+          background-image: url('/stars-background.png');
+          background-size: cover;
+          background-attachment: fixed;
+        }
+
         .neon-text {
-          text-shadow: 0 0 10px #ff4500, 0 0 20px #ff4500;
+          text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+          animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+          from { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
+          to { text-shadow: 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
+        }
+
+        .interactive-buttons .cosmic-button {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid #ff00ff;
+          color: #fff;
+          padding: 10px 20px;
+          border-radius: 25px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-shadow: 0 0 5px #ff00ff;
+          box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .cosmic-button:hover {
+          background: rgba(255, 255, 255, 0.3);
+          box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+        }
+
+        .decorative-elements img {
+          animation: float 3s infinite ease-in-out;
+        }
+
+        @keyframes float {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0); }
+        }
+
+        .navigation .nav-item {
+          color: #fff;
+          text-align: center;
+          font-size: 0.9em;
+          text-shadow: 0 0 5px #ff00ff;
+          text-decoration: none;
+        }
+
+        .navigation .badge {
+          background: #ff0000;
+          color: #fff;
+          border-radius: 50%;
+          padding: 2px 6px;
+          font-size: 0.8em;
+          margin-left: 5px;
         }
 
         .shrock-button-container {
