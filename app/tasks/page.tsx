@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@lib/firebase";
 import { useUser } from "@/context/UserContext";  // Import the UserContext
 
 export default function TasksPage() {

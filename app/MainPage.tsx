@@ -5,7 +5,7 @@ import Countdown from "react-countdown";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs, increment, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@lib/firebase";
 
 const presaleDate = new Date("2025-06-01T00:00:00Z");
 const getToday = () => new Date().toISOString().slice(0, 10);

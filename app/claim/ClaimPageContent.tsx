@@ -12,7 +12,7 @@ import {
   getDocs,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@lib/firebase";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export default function ClaimPageContent() {
