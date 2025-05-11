@@ -4,13 +4,22 @@ import { useEffect, useState } from "react";
 import { db } from "@lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
+// Define User type
+interface User {
+  id: string;
+  earned: number;
+  claimed: number;
+  taps: number;
+}
+
 export default function AdminPage() {
-  const [topUsers, setTopUsers] = useState([]);
+  const [topUsers, setTopUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const fetchTopUsers = async () => {
       const usersSnap = await getDocs(collection(db, "users"));
-      const users = [];
+      const users: User[] = [];
+
       usersSnap.forEach(doc => {
         const data = doc.data();
         users.push({
