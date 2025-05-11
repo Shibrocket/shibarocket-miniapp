@@ -187,5 +187,5 @@ export default function TasksPage() {
       `}</style>
     </div>
   );
-}
+}}
 
