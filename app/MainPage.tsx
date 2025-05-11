@@ -75,10 +75,10 @@ export default function MainPage({ userId }) {
         setAdsWatched(data.adsWatched === today);
       }
 
-      setLoginRewardClaimed(data.loginRewardClaimed === today);
-      setSocialTaskClaimed(data.socialTaskClaimed === today);
-      setPresaleRewardClaimed(data.presaleRewardClaimed === today);
-      setReferralRewardClaimed(data.referralRewardClaimed || false);
+      setLoginRewardClaimed(data?.loginRewardClaimed === today);
+      setSocialTaskClaimed(data?.socialTaskClaimed === today);
+      setPresaleRewardClaimed(data?.presaleRewardClaimed === today);
+      setReferralRewardClaimed(data?.referralRewardClaimed || false);
 
       const adminSnap = await getDoc(doc(db, "admins", userId));
       if (adminSnap.exists()) setIsAdmin(true);
