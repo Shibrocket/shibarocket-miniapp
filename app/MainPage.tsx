@@ -197,7 +197,7 @@ export default function MainPage({ userId }) {
     <div className="bg-black min-h-screen text-white font-sans flex flex-col items-center">
       <div className="pt-8 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <img src="/shrock-coin.png" className="w-20 h-20" alt="$SHROCK" />
+          <img src="/shrock-coin.png" className="w-20 h-20 rounded-full" alt="$SHROCK" />
           <h1 className="text-2xl font-bold text-orange-400 neon-text">ShibaRocket</h1>
         </div>
         <p className="text-sm text-center">Presale Countdown:</p>
