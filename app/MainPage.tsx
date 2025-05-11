@@ -36,14 +36,14 @@ export default function MainPage({ userId }: { userId: string }) {
     remaining: 0,
   });
   const [isAdmin, setIsAdmin] = useState(false);
-  const [tasksCount, setTasksCount] = useState(39); // Mock badge count
-  const [aiCount, setAiCount] = useState(1); // Mock badge count
-  const [boostCount, setBoostCount] = useState(15); // Mock badge count
+  const [tasksCount, setTasksCount] = useState(39);
+  const [aiCount, setAiCount] = useState(1);
+  const [boostCount, setBoostCount] = useState(15);
 
   const MAX_ENERGY = 500;
   const FREE_TAP_LIMIT = 400;
   const BONUS_TAP_LIMIT = 100;
-  const TAP_REWARD = 5; // 1 tap = 5 $SHROCK
+  const TAP_REWARD = 5;
 
   useEffect(() => {
     if (!userId) return;
@@ -296,7 +296,7 @@ export default function MainPage({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <div className="navigation fixed bottom-0 w-full bg-zinc-900 border-t border-purple-700 flex justify-around p-2">
+      <div className="navigation fixed bottom-0 w-full flex justify-around p-2">
         <Link href="/tasks" className="nav-item">
           Tasks <span className="badge">{tasksCount}</span>
         </Link>
@@ -309,120 +309,6 @@ export default function MainPage({ userId }: { userId: string }) {
         <Link href="/referrals" className="nav-item">Referrals</Link>
         <Link href="/claim" className="nav-item">Claim</Link>
       </div>
-
-      <style jsx>{`
-        html, body {
-          margin: 0;
-          padding: 0;
-          height: 100vh;
-          overflow: hidden;
-        }
-
-        .main-page {
-          background: linear-gradient(135deg, #1a0033, #4b0082, #8a2be2) !important;
-          background-image: url('/assets/stars-background.png') !important;
-          background-size: cover !important;
-          background-attachment: fixed !important;
-          min-height: 100vh;
-          overflow-y: auto;
-        }
-
-        .neon-text {
-          text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
-          animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-          from { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
-          to { text-shadow: 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
-        }
-
-        .interactive-buttons .cosmic-button {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid #ff00ff;
-          color: #fff;
-          padding: 10px 20px;
-          border-radius: 25px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-shadow: 0 0 5px #ff00ff;
-          box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
-          width: 200px;
-          text-align: center;
-        }
-
-        .cosmic-button:hover {
-          background: rgba(255, 255, 255, 0.3);
-          box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
-        }
-
-        .decorative-elements img {
-          animation: float 3s infinite ease-in-out;
-        }
-
-        @keyframes float {
-          0% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-          100% { transform: translateY(0); }
-        }
-
-        .navigation {
-          position: fixed;
-          bottom: 0;
-          width: 100%;
-          background: rgba(0, 0, 0, 0.7);
-          border-top: 1px solid #ff00ff;
-          box-shadow: 0 -5px 15px rgba(255, 0, 255, 0.3);
-        }
-
-        .navigation .nav-item {
-          color: #fff;
-          text-align: center;
-          font-size: 0.9em;
-          text-shadow: 0 0 5px #ff00ff;
-          text-decoration: none;
-        }
-
-        .navigation .badge {
-          background: #ff0000;
-          color: #fff;
-          border-radius: 50%;
-          padding: 2px 6px;
-          font-size: 0.8em;
-          margin-left: 5px;
-        }
-
-        .shrock-button-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .shrock-button {
-          background-color: #0e0e2a;
-          border: none;
-          border-radius: 50%;
-          padding: 15px;
-          width: 100px;
-          height: 100px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .shrock-button:hover {
-          transform: scale(1.1);
-          box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
-        }
-
-        .shrock-logo {
-          width: 70%;
-          height: auto;
-        }
-      `}</style>
     </div>
   );
 }
