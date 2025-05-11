@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { db } from "@lib/firebase";
-import { useUser } from "@/context/UserContext";  // Access userId from context
+import { useUser } from "@/context/UserContext";
 
 export default function TasksPage() {
   const { userId } = useUser();
@@ -44,21 +44,27 @@ export default function TasksPage() {
     fetchData();
   }, [userId]);
 
-  const handleTaskClaim = async (taskKey: string, reward: number, setState: React.Dispatch<React.SetStateAction<boolean>>) => {
+  const handleTaskClaim = async (
+    field: string,
+    reward: number,
+    setClaimed: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
     try {
       const userRef = doc(db, "users", userId!);
       await updateDoc(userRef, {
         earned: increment(reward),
-        [taskKey]: getToday(),
+        [field]: getToday(),
         lastUpdated: serverTimestamp(),
       });
-      setEarned((prev) => prev + reward);
-      setState(true);
-    } catch (error) {
-      console.error(`Failed to claim ${taskKey} reward:`, error);
-      alert("Something went wrong. Try again later.");
+      setEarned(prev => prev + reward);
+      setClaimed(true);
+    } catch (err) {
+      console.error(`Failed to claim ${field}:`, err);
+      alert("Something went wrong. Please try again later.");
     }
   };
+
+  const goBack = () => router.push("/");
 
   if (loading) {
     return (
@@ -71,18 +77,23 @@ export default function TasksPage() {
   return (
     <div className="bg-black min-h-screen text-white flex flex-col items-center py-10">
       <h1 className="text-3xl font-bold text-center text-pink-500 mb-6">Cosmic Task Center</h1>
-
-      <p className="text-center text-yellow-400 mb-4">Total Earned: {earned.toLocaleString()} $SHROCK</p>
+      <p className="text-center text-yellow-400 mb-4">
+        Total Earned: {earned.toLocaleString()} $SHROCK
+      </p>
 
       <div className="w-full max-w-md px-4">
-        <p className="text-lg text-center mb-4">Earn $SHROCK by completing these tasks!</p>
+        <p className="text-lg text-center mb-4">
+          Earn $SHROCK by completing these tasks!
+        </p>
 
         {/* Login Reward */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
           <p className="text-xl text-blue-400 mb-2">Daily Login Reward</p>
           <button
             onClick={() => handleTaskClaim("loginRewardClaimed", 500, setLoginRewardClaimed)}
-            className={`w-full py-2 rounded text-white ${loginRewardClaimed ? "bg-gray-600" : "bg-blue-600"}`}
+            className={`w-full py-2 rounded text-white ${
+              loginRewardClaimed ? "bg-gray-600" : "bg-blue-600"
+            }`}
             disabled={loginRewardClaimed}
           >
             {loginRewardClaimed ? "Reward Claimed" : "Claim 500 $SHROCK"}
@@ -94,19 +105,23 @@ export default function TasksPage() {
           <p className="text-xl text-purple-400 mb-2">Complete Social Task</p>
           <button
             onClick={() => handleTaskClaim("socialTaskClaimed", 20000, setSocialTaskClaimed)}
-            className={`w-full py-2 rounded text-white ${socialTaskClaimed ? "bg-gray-600" : "bg-purple-600"}`}
+            className={`w-full py-2 rounded text-white ${
+              socialTaskClaimed ? "bg-gray-600" : "bg-purple-600"
+            }`}
             disabled={socialTaskClaimed}
           >
             {socialTaskClaimed ? "Task Claimed" : "Earn 20,000 $SHROCK"}
           </button>
         </div>
 
-        {/* Presale Task */}
+        {/* Presale Reminder */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
           <p className="text-xl text-green-400 mb-2">Presale Reminder</p>
           <button
             onClick={() => handleTaskClaim("presaleRewardClaimed", 75000, setPresaleRewardClaimed)}
-            className={`w-full py-2 rounded text-white ${presaleRewardClaimed ? "bg-gray-600" : "bg-green-600"}`}
+            className={`w-full py-2 rounded text-white ${
+              presaleRewardClaimed ? "bg-gray-600" : "bg-green-600"
+            }`}
             disabled={presaleRewardClaimed}
           >
             {presaleRewardClaimed ? "Reward Claimed" : "Claim 75,000 $SHROCK"}
@@ -115,7 +130,7 @@ export default function TasksPage() {
 
         <div className="text-center mt-6">
           <button
-            onClick={() => router.push("/")}
+            onClick={goBack}
             className="bg-blue-600 text-white px-6 py-2 rounded-full"
           >
             Back to Main Page
