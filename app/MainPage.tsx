@@ -19,7 +19,7 @@ import { db } from "@lib/firebase";
 const presaleDate = new Date("2025-06-01T00:00:00Z");
 const getToday = () => new Date().toISOString().slice(0, 10);
 
-export default function MainPage({ userId }) {
+export default function MainPage({ userId }: { userId: string }) {
   const router = useRouter();
 
   const [energy, setEnergy] = useState(0);
@@ -43,6 +43,7 @@ export default function MainPage({ userId }) {
   const MAX_ENERGY = 500;
   const FREE_TAP_LIMIT = 400;
   const BONUS_TAP_LIMIT = 100;
+  const TAP_REWARD = 5; // 1 tap = 5 $SHROCK
 
   useEffect(() => {
     if (!userId) return;
@@ -54,7 +55,7 @@ export default function MainPage({ userId }) {
 
       if (!userSnap.exists()) {
         await setDoc(userRef, {
-          energy: 0,
+          energy: FREE_TAP_LIMIT,
           earned: 0,
           referrals: 0,
           referralRewardClaimed: false,
@@ -73,16 +74,16 @@ export default function MainPage({ userId }) {
 
       if (data?.lastUpdated !== today) {
         await updateDoc(userRef, {
-          energy: 0,
+          energy: FREE_TAP_LIMIT,
           earned: 0,
           adsWatched: "",
           lastUpdated: today,
         });
-        setEnergy(0);
+        setEnergy(FREE_TAP_LIMIT);
         setEarned(0);
         setAdsWatched(false);
       } else {
-        setEnergy(data.energy || 0);
+        setEnergy(data.energy || FREE_TAP_LIMIT);
         setEarned(data.earned || 0);
         setAdsWatched(data.adsWatched === today);
       }
@@ -103,7 +104,7 @@ export default function MainPage({ userId }) {
     fetchData();
   }, [userId]);
 
-  const ensureDailyPoolsExist = async (date) => {
+  const ensureDailyPoolsExist = async (date: string) => {
     const pools = [
       { path: `dailyPools/socialTaskPool/${date}`, amount: 666_000_000 },
       { path: `dailyPools/presalePool/${date}`, amount: 333_000_000 },
@@ -129,6 +130,19 @@ export default function MainPage({ userId }) {
     await updateDoc(doc(db, "users", userId), {
       energy: newEnergy,
       adsWatched: getToday(),
+      lastUpdated: getToday(),
+    });
+  };
+
+  const handleTap = async () => {
+    if (energy <= 0) return alert("No taps remaining!");
+    const newEnergy = energy - 1;
+    const newEarned = earned + TAP_REWARD;
+    setEnergy(newEnergy);
+    setEarned(newEarned);
+    await updateDoc(doc(db, "users", userId), {
+      energy: newEnergy,
+      earned: newEarned,
       lastUpdated: getToday(),
     });
   };
@@ -209,7 +223,7 @@ export default function MainPage({ userId }) {
     <div className="main-page min-h-screen text-white font-sans flex flex-col items-center relative">
       <div className="pt-8 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <img src="/shrock-coin.png" className="w-20 h-20 rounded-full" alt="$SHROCK" />
+          <img src="/assets/shrock-coin.png" className="w-20 h-20 rounded-full" alt="$SHROCK" />
           <h1 className="text-2xl font-bold neon-text">$SHROCK</h1>
         </div>
         <p className="text-sm text-center text-purple-300">Presale Countdown:</p>
@@ -227,23 +241,26 @@ export default function MainPage({ userId }) {
         <p className="text-cyan-300">Energy: {energy}/{getMaxEnergy()}</p>
         <p className="text-pink-300">Your Balance: {earned.toLocaleString()} $SHROCK</p>
 
-        {/* Interactive Buttons */}
         <div className="interactive-buttons mt-6 flex flex-col items-center gap-3">
-          <button className="cosmic-button">$SHROCK</button>
-          <button className="cosmic-button">$SHROCK-Galaxy</button>
-          <button className="cosmic-button">$SHROCK-Treasures</button>
+          <button className="cosmic-button" onClick={() => alert('Interact with $SHROCK!')}>
+            $SHROCK
+          </button>
+          <button className="cosmic-button" onClick={() => alert('Go to $SHROCK-Galaxy!')}>
+            $SHROCK-Galaxy
+          </button>
+          <button className="cosmic-button" onClick={() => alert('Explore $SHROCK-Treasures!')}>
+            $SHROCK-Treasures
+          </button>
         </div>
 
-        {/* Decorative Elements */}
         <div className="decorative-elements absolute top-1/4 left-4 flex flex-col gap-4">
-          <img src="/heart-icon.png" alt="Heart" className="w-10 h-10 animate-float" />
-          <img src="/sapphire-ticket.png" alt="Sapphire Ticket" className="w-16 h-10 animate-float" />
+          <img src="/assets/heart-icon.png" alt="Heart" className="w-10 h-10 animate-float" />
+          <img src="/assets/sapphire-ticket.png" alt="Sapphire Ticket" className="w-16 h-10 animate-float" />
         </div>
 
-        {/* Round Tap Button */}
         <div className="shrock-button-container mt-4">
-          <button onClick={() => alert('Tapped to earn $SHROCK!')} className="shrock-button">
-            <img src="/shrock-coin.png" alt="$SHROCK Coin" className="shrock-logo" />
+          <button onClick={handleTap} className="shrock-button">
+            <img src="/assets/shrock-coin.png" alt="$SHROCK Coin" className="shrock-logo" />
           </button>
         </div>
 
@@ -294,11 +311,20 @@ export default function MainPage({ userId }) {
       </div>
 
       <style jsx>{`
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100vh;
+          overflow: hidden;
+        }
+
         .main-page {
-          background: linear-gradient(135deg, #1a0033, #4b0082, #8a2be2);
-          background-image: url('/stars-background.png');
-          background-size: cover;
-          background-attachment: fixed;
+          background: linear-gradient(135deg, #1a0033, #4b0082, #8a2be2) !important;
+          background-image: url('/assets/stars-background.png') !important;
+          background-size: cover !important;
+          background-attachment: fixed !important;
+          min-height: 100vh;
+          overflow-y: auto;
         }
 
         .neon-text {
@@ -321,6 +347,8 @@ export default function MainPage({ userId }) {
           transition: all 0.3s ease;
           text-shadow: 0 0 5px #ff00ff;
           box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+          width: 200px;
+          text-align: center;
         }
 
         .cosmic-button:hover {
@@ -336,6 +364,15 @@ export default function MainPage({ userId }) {
           0% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
           100% { transform: translateY(0); }
+        }
+
+        .navigation {
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          border-top: 1px solid #ff00ff;
+          box-shadow: 0 -5px 15px rgba(255, 0, 255, 0.3);
         }
 
         .navigation .nav-item {
