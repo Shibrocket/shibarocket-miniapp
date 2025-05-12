@@ -254,8 +254,18 @@ export default function MainPage({ userId }: { userId: string }) {
         </div>
 
         <div className="decorative-elements absolute top-1/4 left-4 flex flex-col gap-4">
-          <img src="/assets/heart-icon.png" alt="Heart" className="w-10 h-10 animate-float" />
-          <img src="/assets/sapphire-ticket.png" alt="Sapphire Ticket" className="w-16 h-10 animate-float" />
+          <img
+            src="/assets/heart-icon.png"
+            alt="Heart"
+            className="w-10 h-10 animate-float"
+            onError={(e) => console.log("Failed to load heart-icon.png", e)}
+          />
+          <img
+            src="/assets/sapphire-ticket.png"
+            alt="Sapphire Ticket"
+            className="w-16 h-10 animate-float"
+            onError={(e) => console.log("Failed to load sapphire-ticket.png", e)}
+          />
         </div>
 
         <div className="shrock-button-container mt-4">
